@@ -6,7 +6,7 @@ Replace the example group name and member details below with your group's inform
 
 ## Group Name
 
-**Group-ABC** *(example)*
+**Group-ASYM**
 
 ## Group Members
 
@@ -14,8 +14,7 @@ List all 4–5 group members. The first row is an example; replace it with a mem
 
 | Full Name | GitHub Username | Email | School Number |
 | --- | --- | --- | --- |
-| Ömer Kılınç *(example)* | @CPPpriest | omerkilinc@etu.edu.tr | 261111011 |
-| Member 2 | @github-username | email@etu.edu.tr | School number |
-| Member 3 | @github-username | email@etu.edu.tr | School number |
-| Member 4 | @github-username | email@etu.edu.tr | School number |
-| Member 5 | @github-username | email@etu.edu.tr | School number |
+| Murat Can Işık | @cmuratt | muratcanisik@etu.edu.tr | 241101013 |
+| Yunus Emre Biçer | @YunusEmre113 | y.bicer@etu.edu.tr | 241101009 |
+| Ahmet Sefa Efendioğlu | @Endy-blip | a.efendioglu@etu.edu.tr | 241101066 |
+| Arda Çelik | @ardacelik11 | arda.celik@etu.edu.tr | 241101065 |
