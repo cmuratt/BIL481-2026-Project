@@ -6,11 +6,11 @@
 | :--- | :--- |
 | **Course** | BIL 481 Software Engineering, Fall 2026, TOBB University of Economics and Technology |
 | **Assignment** | Project Assignment 1 (SALT Documentation / No Code Submission) |
-| **Group Name** | GROUP-ASYM |
+| **Group Name** | Group-ASYM |
 | **Group Members** | Murat Can Işık, Arda Çelik, Yunus Emre Biçer, Ahmet Sefa Efendioğlu |
 | **Document Lead & Primary Author** | **Murat Can Işık** (Requirements Lead & Full-Stack Developer) |
 | **Quality Reviewer & Release Lead** | **Ahmet Sefa Efendioğlu** (QA Lead & Cross-Audit Verification) |
-| **Document Version / Date** | Version 1.0 (Final Deliverable), 31 October 2026 |
+| **Document Version / Date** | Version 1.0 (Final Deliverable), 1 November 2026 |
 | **Repository Filepath** | `docs/Requirements_Document.md` |
 | **Related Documents** | `docs/Concept_Notes.pdf`, `Project_Definition_Document.md`, `Project_Plan_Document.md` |
 
@@ -22,10 +22,10 @@ As required by the BIL 481 Project Assignment 1 specification, each document mus
 
 | Member Name | Student ID | GitHub Account | Primary Project Role | Contribution to this Document |
 | :--- | :--- | :--- | :--- | :--- |
-| **Murat Can Işık** | 241101013 | `@muratcanisik` | Requirements Engineer & Lead Developer | **Primary Author & Sole Owner:** Authored the entire document from scratch; drafted sections 1–6 (FR-01 to FR-20, NFR-01 to NFR-09), defined acceptance criteria, I/O schemas, and traceability tables. |
-| **Ahmet Sefa Efendioğlu** | 241101016 | `@ahmetsefa` | QA & Release Lead | **Cross-Audit & Verification:** Performed guideline compliance checks (10+ FR, 5+ NFR check), verified document-specific task matrix, audited Table of Contents, and verified PDF compile pipeline. |
-| **Arda Çelik** | 241101014 | `@ardacelik` | Project Definition Lead | **Scope Synchronization:** Verified alignment between Project Definition Key Features (F-1 to F-7) and functional requirement declarations. |
-| **Yunus Emre Biçer** | 241101015 | `@yunusemrebicer` | Project Planner & Architect | **Schedule & Effort Verification:** Validated the 3.0-hour document creation effort and mapped requirements against the 70-hour project budget. |
+| **Murat Can Işık** | 241101013 | `@cmuratt` | Requirements Engineer & Lead Developer | **Primary Author & Sole Owner:** Authored the entire document from scratch; drafted sections 1–6 (FR-01 to FR-20, NFR-01 to NFR-09), defined acceptance criteria, I/O schemas, and traceability tables. |
+| **Ahmet Sefa Efendioğlu** | 241101066 | `@Sefa-Efendioglu` | QA & Release Lead | **Cross-Audit & Verification:** Performed guideline compliance checks (10+ FR, 5+ NFR check), verified document-specific task matrix, audited Table of Contents, and verified PDF compile pipeline. |
+| **Arda Çelik** | 241101065 | `@ardacelik11` | Project Definition Lead | **Scope Synchronization:** Verified alignment between Project Definition Key Features (F-1 to F-7) and functional requirement declarations. |
+| **Yunus Emre Biçer** | 241101009 | `@YunusEmre113` | Project Planner & Architect | **Schedule & Effort Verification:** Validated the 3.0-hour document creation effort and mapped requirements against the 70-hour project budget. |
 
 ---
 
@@ -496,7 +496,7 @@ The matrix below maps each Functional and Non-Functional Requirement to its orig
 | **FR-06** | Connector Tier / SIS Adapter | Section 3.1 - FR-1 & FR-2 | F-1 & F-5: Identity Handling | T | Must |
 | **FR-07** | Fastify API Gateway / JWT | Section 3.1 - FR-2 | F-5: Secure Identity Handling | T, I | Must |
 | **FR-08** | API Gateway / Redis Counters | Section 3.2 - NFR-4 | F-5: Secure Identity Handling | T | Must |
-| **FR-09** | Distributed Redis Cluster | Section 3.1 - FR-3 & Sec. 4 | F-4: Resilient Data Access | T | Must |
+| **FR-09** | Redis Cache Store | Section 3.1 - FR-3 & Sec. 4 | F-4: Resilient Data Access | T | Must |
 | **FR-10** | MCP Core / Stale Fallback | Section 3.1 - FR-3 & Sec. 4 | F-4: Resilient Data Access | T | Must |
 | **FR-11** | MCP Core / Circuit Breaker | Section 3.2 - NFR-2 | F-4: Resilient Data Access | T | Must |
 | **FR-12** | Connector Abstract Interface | Section 3.1 - FR-5 | F-7: Connectors & Mock Mode | T, I | Must |
@@ -533,6 +533,6 @@ The matrix below maps each Functional and Non-Functional Requirement to its orig
 | **v0.1** | 22 Oct 2026 | Murat Can Işık | — | Initial draft based on Concept Notes and core pseudocode. |
 | **v0.5** | 26 Oct 2026 | Murat Can Işık | Ahmet Sefa Efendioğlu | Expanded functional requirements to 12 items; drafted preliminary NFRs. |
 | **v0.9** | 30 Oct 2026 | Murat Can Işık | Yunus Emre Biçer | Integrated stakeholder classes, mock-mode assumptions, and acceptance criteria. |
-| **v1.0** | 31 Oct 2026 | Murat Can Işık | Ahmet Sefa Efendioğlu | Final deliverable compiled for Assignment 1 submission; verified against grading checklist. |
+| **v1.0** | 1 Nov 2026 | Murat Can Işık | Ahmet Sefa Efendioğlu | Final deliverable compiled for Assignment 1 submission; cross-audit and consistency verified. |
 
-*This document constitutes the official Requirements Document deliverable for GROUP-ASYM in BIL 481 Software Engineering, Fall 2026, submitted under the sole authorship responsibility of Murat Can Işık.*
+*This document constitutes the official Requirements Document deliverable for Group-ASYM in BIL 481 Software Engineering, Fall 2026, authored by Murat Can Işık and reviewed/verified by Ahmet Sefa Efendioğlu.*

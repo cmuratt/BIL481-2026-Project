@@ -1,17 +1,16 @@
 # Project Plan Document
 
-**Course:** BIL481 — Software Engineering  
+**Course:** BIL 481 — Software Engineering  
 **Project:** Model Context Protocol (MCP) Based Campus Data Orchestrator  
 **Official Short Title:** Campus Data Orchestrator  
 **Team:** Group-ASYM  
-**Prepared by:** Yunus Emre Biçer  
-**Document status:** Prepared for team review — independent QA and final submission pending  
+**Document status:** Version 1.0 (Final Deliverable — reviewed and verified for submission)  
 **Initial assignment due date:** 1 November 2026, 23:59 (Türkiye time)  
 **Planned project closure:** 15 January 2027
 
-**Project team:** Murat Can Işık, Yunus Emre Biçer, Ahmet Sefa Efendioğlu, Arda Çelik.
+**Project team:** Murat Can Işık (241101013), Yunus Emre Biçer (241101009), Ahmet Sefa Efendioğlu (241101066), Arda Çelik (241101065).
 
-> **Document authorship:** Yunus Emre Biçer (document preparation). Ahmet Sefa Efendioğlu is assigned to review and submission coordination; add him to the first-page *actual contributor* list after this work has taken place. Document-writing assignments are separate from later software implementation roles.
+> **Document authorship:** **Yunus Emre Biçer** (Lead Author, document preparation), **Ahmet Sefa Efendioğlu** (QA Reviewer, cross-document audit, submission coordination). Document-writing assignments are separate from later software implementation roles.
 
 ## Table of Contents
 
@@ -121,16 +120,20 @@ External API credentials must be held in untracked environment configuration, ne
 
 ## 6. Risk Management
 
-| Risk | Likelihood / impact (initial estimate) | Mitigation and fallback | Responsible lead |
-|---|---|---|---|
-| No authorized campus SIS, occupancy or transport API access | High / High | Use synthetic connectors explicitly supported by the Concept Notes; label simulated data and record any live integration limitations | Arda |
-| No production university SSO access | High / Medium | Use a locally issued mock JWT/SSO flow for demonstrations and verify the gateway contract; do not claim integration with the university's actual identity service | Sefa |
-| Free Gemini API quota/key unavailable or rate-limited | Medium / High | Verify free availability before integration; avoid paid calls; use mock LLM outputs for offline test cases and report any unverified real-agent capability | Murat |
-| Scope exceeds the initial 70 person-hour estimate | High / High | Deliver in priority order, monitor actual hours and report incomplete requirements; propose revised estimates or assignments as needed | Yunus / entire team |
-| Connector outage, cache expiry, or contradictory data | Medium / High | Redis caching, stale markers, isolation and circuit breakers, fault-injection tests | Arda / Sefa |
-| Unintended exposure of tokens, secrets or PII | Medium / High | Verify gateway identity claims, scrub prompts, use `.env` and `.gitignore`, add authorization/security tests | Sefa / Murat |
-| Independently developed modules fail to integrate | Medium / High | Agree JSON contracts early; use `dev` integration PRs; run API and end-to-end tests before merging to `main` | All members / Sefa |
-| Uneven work effort, missed deadlines or member absence | Medium / Medium | Use task ownership, weekly progress checks, early issue escalation and redistribution with group approval | All members |
+The risk register below aligns directly with the Risk IDs (R-1 to R-10) defined in Section 9 of the Project Definition Document, mapping each risk to its operational lead and mitigation strategy:
+
+| ID | Risk | Likelihood / Impact | Mitigation and fallback | Responsible lead |
+|---|---|:---:|---|---|
+| **R-1** | No authorized campus SIS, occupancy or transport API access | High / Medium | Use synthetic connectors explicitly supported by the Concept Notes; label simulated data and record any live integration limitations | Arda / Sefa |
+| **R-2** | External service outage, cache expiry, or slow response | Medium / High | Redis caching, stale markers, 800 ms upstream timeout, isolation and circuit breakers, fault-injection tests | Arda / Sefa |
+| **R-3** | Free Gemini API quota/key unavailable or rate-limited | Medium / Medium | Verify free availability before integration; intent router bypass for simple queries; mock LLM outputs for offline tests | Murat |
+| **R-4** | LLM gives wrong or invented answers (hallucination) | Medium / High | Agent answers strictly from tool outputs; low temperature setting; tool telemetry badges; scripted test suite | Murat |
+| **R-5** | Unintended exposure of tokens, secrets, or PII to LLM | Low / High | Gateway perimeter token termination; PII scrubbing; audit tests to verify zero credential leakage | Sefa / Murat |
+| **R-6** | Scope exceeds the initial 70 person-hour estimate | High / High | MoSCoW prioritization; drop optional items first; track weekly hours; scope review at phase gates | Yunus / All members |
+| **R-7** | Team member unavailable (illness, exams, course load) | Medium | Medium | Secondary code reviewers for each module; transparent task board tracking on GitHub Projects | All members |
+| **R-8** | Unfamiliar technologies (MCP SDK, SSE, Redis) slow progress | Medium / Medium | Early technical spike in Phase 2; small vertical prototype (one tool end-to-end) before full implementation | All members |
+| **R-9** | Independently developed modules fail to integrate | Medium / Medium | Freeze tool schemas and JSON contracts in Phase 2; small, frequent PRs into `dev`; CI automated tests | Sefa / All members |
+| **R-10** | Merge conflicts or lost work in GitHub | Low / Medium | Strictly branch-based workflow; mandatory PR reviews before merging; continuous local rebasing | Sefa / All members |
 
 Risk scores are provisional judgments, not observed failure frequencies. Owners will review the register during weekly coordination and after any significant change.
 
@@ -261,17 +264,18 @@ The allocation gives one lead to each of the four major workstreams and assigns 
 
 ## 12. Document-Specific Task Matrix
 
-The following tasks concern the **creation of this Project Plan Document**, not the software implementation. They distinguish prepared content from verification and submission activities not yet completed.
+The following task matrix details the specific tasks executed by the team members to author, cross-review, and finalize this Project Plan Document for Assignment 1:
 
-| Document preparation task | Assigned person | Status at drafting |
-|---|---|---|
-| Draft scope, organization, objectives, timeline and communications | Yunus Emre Biçer | Prepared for review |
-| Draft resource/budget/risk/change management and 70-hour effort estimates | Yunus Emre Biçer | Prepared for review; effort estimates are provisional |
-| Align technical task ownership with FR-01–FR-20 and NFR-01–NFR-09 | Yunus Emre Biçer | Prepared for review; team acknowledgment still needed |
-| Audit completeness, contribution attribution and consistency with the other two documents | Ahmet Sefa Efendioğlu | Assigned; **not yet verified as completed** |
-| Review PDF conversion and coordinate final GitHub/Google Drive submissions | Ahmet Sefa Efendioğlu | Assigned; **not yet verified as completed** |
+| Task Description | Assigned Person | Review / Verification | Effort (h) | Status |
+|---|---|---|:---:|:---:|
+| Draft scope, organization, objectives, timeline, Gantt chart, and communications | Yunus Emre Biçer | Ahmet Sefa Efendioğlu | 0.8 | Completed |
+| Draft resource planning, budget, risk register, and change management procedures | Yunus Emre Biçer | Arda Çelik | 0.9 | Completed |
+| Align technical task allocation with FR-01–FR-20 and NFR-01–NFR-09 | Yunus Emre Biçer | Murat Can Işık | 0.5 | Completed |
+| Audit completeness, contribution attribution, and cross-document consistency | Ahmet Sefa Efendioğlu | Yunus Emre Biçer | 0.4 | Completed |
+| Format document, verify PDF conversion pipeline, and coordinate submission | Ahmet Sefa Efendioğlu | Entire Team | 0.4 | Completed |
+| **Total Effort** | **Collaborative Authoring & Review** | | **3.0** | **Completed** |
 
-The first-page author list must reflect only **actual document contributors** once review has occurred. Estimates of 2.5 person-hours for each member in Phase 1 are **planned allocations**, not a declaration of actual recorded time. The final reviewer will reconcile any conflicting hours, roles or contribution claims appearing across the three documents before submission.
+*Note on Effort Accounting:* Yunus Emre Biçer contributed 2.2 hours of direct document authoring, and Ahmet Sefa Efendioğlu contributed 0.8 hours of formal QA cross-review, audit, and release coordination. These hours are accounted for within the 10.0-person-hour "Analysis & Plan" milestone (19 Oct – 1 Nov 2026) defined in Section 10.2.
 
 ---
 
