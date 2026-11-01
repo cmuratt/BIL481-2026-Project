@@ -173,12 +173,12 @@ Likelihood (L) and impact (I) are rated Low / Medium / High. The same risk IDs a
 | R-6 | Scope too large for 70 person-hours | High | High | Must/Should/Could priorities; optional items (mTLS, Redis Cluster, live scrapers) are dropped first; scope reviewed at the end of each phase |
 | R-7 | Team member unavailable (illness, exams, other course load) | Medium | Medium | Every module has a secondary reviewer who knows it through code review; tasks tracked on the GitHub Projects board |
 | R-8 | Unfamiliar technologies (MCP SDK, SSE, Redis) slow development | Medium | Medium | Early technical spike in the Design phase; small vertical prototype (one tool end-to-end) before full development |
-| R-9 | Integration problems between separately developed components | Medium | Medium | Interfaces and JSON Schemas fixed in the Design phase; small, frequent pull requests into `main`; integration tests in CI on every pull request |
-| R-10 | Merge conflicts or lost work in GitHub | Low | Medium | Feature branches, pull requests into `main` with review, no direct commits to `main` |
+| R-9 | Integration problems between separately developed components | Medium | Medium | Interfaces and JSON Schemas fixed in the Design phase; small, frequent pull requests into `dev`; integration tests in CI on every pull request |
+| R-10 | Merge conflicts or lost work in GitHub | Low | Medium | Feature branches, pull requests into `dev` with review, no direct commits to `main` |
 
 ## 10. Project Success Criteria
 
-The project will be considered successful if the following measurable criteria are met at the final evaluation (14 January 2027):
+The project will be considered successful if the following measurable criteria are met at the final evaluation (15 January 2027):
 
 | ID | Success criterion | How it is measured |
 | --- | --- | --- |
@@ -222,3 +222,10 @@ The 2.5 hours of Arda Çelik and the 0.5 hours of Ahmet Sefa Efendioğlu are par
 | Version | Date | Author | Change |
 | --- | --- | --- | --- |
 | 1.0 | 1 Nov 2026 | Arda Çelik; reviewed by Ahmet Sefa Efendioğlu | Final version for Project Assignment 1 |
+
+---
+
+**Effort reconciliation across Assignment 1 documents**
+
+The three document-specific task matrices report 3.0 person-hours per document (9.0 hours total). The Project Plan separately allocates 10.0 estimated person-hours to Phase 1 (2.5 per member). These are reported document efforts versus planning allocations, not two actual-work totals. The 1.0-hour difference is planned capacity not accounted for in the three document matrices; it must not be counted as completed effort without a corresponding work record.
+

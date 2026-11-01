@@ -280,3 +280,10 @@ The following task matrix details the specific tasks executed by the team member
 ---
 
 *Planning basis: BIL 481 Project Assignment 1 (19 October 2026); Group-ASYM Concept Notes; Group-ASYM task-allocation sheet; Murat Can Işık’s Requirements Document (FR-01–FR-20 and NFR-01–NFR-09). Dates beyond Assignment 1 are internal targets unless subsequently confirmed by course staff.*
+
+---
+
+**Effort reconciliation across Assignment 1 documents**
+
+The three document-specific task matrices report 3.0 person-hours per document (9.0 hours total). The Project Plan separately allocates 10.0 estimated person-hours to Phase 1 (2.5 per member). These are reported document efforts versus planning allocations, not two actual-work totals. The 1.0-hour difference is planned capacity not accounted for in the three document matrices; it must not be counted as completed effort without a corresponding work record.
+

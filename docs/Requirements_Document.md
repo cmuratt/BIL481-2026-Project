@@ -491,3 +491,10 @@ The matrix below maps each Functional and Non-Functional Requirement to its orig
 | **v1.0** | 1 Nov 2026 | Murat Can Işık | Ahmet Sefa Efendioğlu | Final deliverable compiled for Assignment 1 submission; cross-audit and consistency verified. |
 
 *This document constitutes the official Requirements Document deliverable for Group-ASYM in BIL 481 Software Engineering, Fall 2026, authored by Murat Can Işık and reviewed/verified by Ahmet Sefa Efendioğlu.*
+
+---
+
+**Effort reconciliation across Assignment 1 documents**
+
+The three document-specific task matrices report 3.0 person-hours per document (9.0 hours total). The Project Plan separately allocates 10.0 estimated person-hours to Phase 1 (2.5 per member). These are reported document efforts versus planning allocations, not two actual-work totals. The 1.0-hour difference is planned capacity not accounted for in the three document matrices; it must not be counted as completed effort without a corresponding work record.
+
