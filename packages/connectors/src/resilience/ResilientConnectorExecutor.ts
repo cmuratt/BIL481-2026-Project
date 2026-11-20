@@ -19,12 +19,17 @@
  *      No entry                                    → return ERROR with a user-readable message.
  *
  * A cache read/write failure never fails the tool call: reads degrade to "miss", writes are skipped.
+ *
+ * Every call emits exactly one ConnectorExecutionEvent (logging.ts) with `upstreamCalled`, so the
+ * acceptance tests can count real connector executions from the log. Caller errors (step 4) are
+ * re-thrown without an event: they are rejected requests, not connector executions.
  */
 
 import type { AuthContext, ICampusConnector } from '@campus-orchestrator/shared';
 import { CACHE_RETENTION_MULTIPLIER, DEFAULT_UPSTREAM_TIMEOUT_MS } from '../config.js';
 import type { CacheEntry, CacheStore } from '../cache/CacheStore.js';
 import { CircuitOpenError, ConnectorError, isCallerError, type ConnectorErrorCode } from '../errors.js';
+import { silentEventSink, type ConnectorEventSink } from '../logging.js';
 import { systemClock, type Clock, type ConnectorName } from '../types.js';
 import { CircuitBreaker, type CircuitBreakerOptions, type CircuitSnapshot } from './CircuitBreaker.js';
 import { withTimeout } from './withTimeout.js';
@@ -47,7 +52,13 @@ export interface ResilientResult<T> {
   timestamp: string;
   /** Present for STALE (why fresh data was unavailable) and ERROR. */
   failure?: ResilientFailure;
-  /** Wall-clock duration of this execute() call in milliseconds (for telemetry badges). */
+  /** Provenance of the returned data (from the cache entry for CACHE_HIT/STALE). Absent for ERROR. */
+  isSimulated?: boolean;
+  /**
+   * Measured duration of this execute() call in whole milliseconds (telemetry badges, Contract `meta.durationMs`).
+   * Taken from a monotonic timer, NOT from the injected business clock, so a fixed test clock
+   * (CONNECTOR_FIXED_NOW, unit-test fake clocks) never hides a real 800 ms timeout.
+   */
   durationMs: number;
 }
 
@@ -58,6 +69,8 @@ export interface ResilientExecuteRequest<TInput, TOutput> {
   context?: AuthContext;
   cacheKey: string;
   ttlSeconds: number;
+  /** True when `connector` is a mock; stored with the cache entry as provenance. Default false. */
+  isSimulated?: boolean;
 }
 
 export interface ResilientExecutorOptions {
@@ -67,6 +80,10 @@ export interface ResilientExecutorOptions {
   timeoutMs?: number;
   retentionMultiplier?: number;
   breaker?: Omit<CircuitBreakerOptions, 'clock'>;
+  /** Receives one event per execute() call. Default: discard (the runtime installs a stderr JSON sink). */
+  onEvent?: ConnectorEventSink;
+  /** Monotonic millisecond source for `durationMs` (default `performance.now`); injectable for tests. */
+  monotonicMs?: () => number;
 }
 
 const USER_MESSAGES: Record<ResilientFailure['code'], string> = {
@@ -90,6 +107,8 @@ export class ResilientConnectorExecutor {
   private readonly retentionMultiplier: number;
   private readonly breakerOptions: Omit<CircuitBreakerOptions, 'clock'>;
   private readonly breakers = new Map<ConnectorName, CircuitBreaker>();
+  private readonly onEvent: ConnectorEventSink;
+  private readonly monotonicMs: () => number;
 
   constructor(options: ResilientExecutorOptions) {
     this.cache = options.cache;
@@ -97,6 +116,8 @@ export class ResilientConnectorExecutor {
     this.timeoutMs = options.timeoutMs ?? DEFAULT_UPSTREAM_TIMEOUT_MS;
     this.retentionMultiplier = options.retentionMultiplier ?? CACHE_RETENTION_MULTIPLIER;
     this.breakerOptions = options.breaker ?? {};
+    this.onEvent = options.onEvent ?? silentEventSink;
+    this.monotonicMs = options.monotonicMs ?? (() => performance.now());
   }
 
   /** The breaker of one connector (created lazily, one per connector name). */
@@ -116,20 +137,60 @@ export class ResilientConnectorExecutor {
   public async execute<TInput, TOutput>(
     request: ResilientExecuteRequest<TInput, TOutput>
   ): Promise<ResilientResult<TOutput>> {
-    const startedAtMs = this.clock().getTime();
-    const elapsed = (): number => Math.max(0, this.clock().getTime() - startedAtMs);
+    const outcome = await this.run(request);
+    this.emit(request, outcome.result, outcome.upstreamCalled);
+    return outcome.result;
+  }
+
+  private emit<T>(request: ResilientExecuteRequest<unknown, T>, result: ResilientResult<T>, upstreamCalled: boolean): void {
+    try {
+      this.onEvent({
+        event: 'connector.execute',
+        at: this.clock().toISOString(),
+        connector: request.connectorName,
+        outcome: result.source,
+        upstreamCalled,
+        cacheKey: request.cacheKey,
+        durationMs: result.durationMs,
+        ...(result.failure !== undefined ? { failureCode: result.failure.code } : {}),
+        circuitState: this.getBreaker(request.connectorName).snapshot().state,
+      });
+    } catch {
+      // A faulty sink must never fail the tool call.
+    }
+  }
+
+  private async run<TInput, TOutput>(
+    request: ResilientExecuteRequest<TInput, TOutput>
+  ): Promise<{ result: ResilientResult<TOutput>; upstreamCalled: boolean }> {
+    const startedAt = this.monotonicMs();
+    const elapsed = (): number => Math.max(0, Math.round(this.monotonicMs() - startedAt));
 
     // 1. Cache lookup
+    const requestSimulated = request.isSimulated ?? false;
     const entry = await this.safeGet<TOutput>(request.cacheKey);
     if (entry !== null && this.clock().getTime() < Date.parse(entry.freshUntil)) {
-      return { source: 'CACHE_HIT', data: entry.value, isStale: false, timestamp: entry.cachedAt, durationMs: elapsed() };
+      return {
+        result: {
+          source: 'CACHE_HIT',
+          data: entry.value,
+          isStale: false,
+          timestamp: entry.cachedAt,
+          durationMs: elapsed(),
+          isSimulated: entry.isSimulated ?? requestSimulated,
+        },
+        upstreamCalled: false,
+      };
     }
 
     // 2. Circuit breaker
     const breaker = this.getBreaker(request.connectorName);
     if (!breaker.tryAcquire()) {
       const retryAt = breaker.snapshot().retryAt ?? this.clock().toISOString();
-      return this.fallback(entry, new CircuitOpenError(request.connectorName, retryAt), elapsed);
+      return {
+        result: this.fallback(entry, new CircuitOpenError(request.connectorName, retryAt), elapsed, requestSimulated),
+        upstreamCalled: false,
+      };
     }
 
     // 3. Upstream call with timeout
@@ -140,10 +201,18 @@ export class ResilientConnectorExecutor {
       const cachedAt = new Date(nowMs).toISOString();
       await this.safeSet(
         request.cacheKey,
-        { value, cachedAt, freshUntil: new Date(nowMs + request.ttlSeconds * 1000).toISOString() },
+        {
+          value,
+          cachedAt,
+          freshUntil: new Date(nowMs + request.ttlSeconds * 1000).toISOString(),
+          isSimulated: requestSimulated,
+        },
         request.ttlSeconds * this.retentionMultiplier
       );
-      return { source: 'LIVE', data: value, isStale: false, timestamp: cachedAt, durationMs: elapsed() };
+      return {
+        result: { source: 'LIVE', data: value, isStale: false, timestamp: cachedAt, durationMs: elapsed(), isSimulated: requestSimulated },
+        upstreamCalled: true,
+      };
     } catch (err: unknown) {
       // 4. Caller errors are not upstream failures.
       if (isCallerError(err)) {
@@ -151,15 +220,28 @@ export class ResilientConnectorExecutor {
         throw err;
       }
       breaker.recordFailure();
-      return this.fallback(entry, err, elapsed);
+      return { result: this.fallback(entry, err, elapsed, requestSimulated), upstreamCalled: true };
     }
   }
 
   // 5. Stale-if-error fallback
-  private fallback<T>(entry: CacheEntry<T> | null, err: unknown, elapsed: () => number): ResilientResult<T> {
+  private fallback<T>(
+    entry: CacheEntry<T> | null,
+    err: unknown,
+    elapsed: () => number,
+    requestSimulated: boolean
+  ): ResilientResult<T> {
     const failure = toFailure(err);
     if (entry !== null) {
-      return { source: 'STALE', data: entry.value, isStale: true, timestamp: entry.cachedAt, failure, durationMs: elapsed() };
+      return {
+        source: 'STALE',
+        data: entry.value,
+        isStale: true,
+        timestamp: entry.cachedAt,
+        failure,
+        durationMs: elapsed(),
+        isSimulated: entry.isSimulated ?? requestSimulated,
+      };
     }
     return {
       source: 'ERROR',
