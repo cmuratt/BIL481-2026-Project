@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "toolName": "get_shuttle_schedule",
+  "data": {
+    "routeId": "MAIN_RING",
+    "routeName": "Ana Ring Hattı (Kampüs – Metro – Yurtlar)",
+    "nextDepartures": [
+      "09:15",
+      "09:30",
+      "09:45"
+    ],
+    "activeVehicles": 3,
+    "lastUpdated": "2026-11-23T06:00:00.000Z"
+  },
+  "meta": {
+    "isSimulated": true,
+    "isStale": false,
+    "source": "LIVE",
+    "timestamp": "2026-11-23T06:00:00.000Z",
+    "durationMs": 0
+  }
+}
