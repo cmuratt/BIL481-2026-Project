@@ -34,6 +34,11 @@ function describeRuntime(runtime: ConnectorRuntime | undefined) {
 export * from './registry/toolDefinitions.js';
 export * from './dispatcher/ToolDispatcher.js';
 export * from './agent/AgentOrchestrator.js';
+export * from './agent/LlmProvider.js';
+export * from './agent/FakeProvider.js';
+export * from './agent/GeminiProvider.js';
+export * from './agent/piiScrubber.js';
+export * from './agent/outboundLog.js';
 export * from './server.js';
 export * from './wire/jsonRpc.js';
 export * from './mocks/sampleMockHandlers.js';
