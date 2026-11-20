@@ -144,7 +144,7 @@ your decision.
 | Same merged tree with `REDIS_TEST_URL` (redis-server 7.0.15) | Linux development environment | 301 passed |
 | `connector-evidence.mjs` (TC-01/02/03/06 data part, A-03, A-07, A-09) | Linux development environment, redis-server 7.0.15 | 7/7 PASS |
 | Redis stopped and restarted under a connected client (manual) | Linux development environment | read rejected in 1 ms ("client is offline"), reconnected, writes succeeded after restart |
-| Same on Arda's machine | — | **NOT RUN** (no Docker/Redis confirmed there) |
+| `tsc` (5 workspaces) + `npx vitest run` on Arda's own computer (macOS 15.0.1 (arm64), Node v26.13.1) | Arda | PASS — Tests 293 passed / 8 skipped (301); real-Redis group skipped (no Redis there) — `evidence/connectors/vitest-arda-mac.txt` |
 | Redis inside Compose, connector logs from the MCP container | — | **NOT RUN** — needs this branch merged and a Compose run (Sefa has Docker) |
 | AT-01, AT-02, AT-03 | — | **NOT RUN (BLOCKED)** — this branch not merged yet |
 | End-to-end p95 latency / hit ratio (NFR-01 / NFR-02) | — | **NOT RUN** — needs the deployed stack and a load run (Sefa) |
