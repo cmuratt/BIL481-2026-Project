@@ -1,0 +1,173 @@
+========================================================================
+Campus Data Orchestrator — Automated test run (connector tier + whole repository)
+========================================================================
+EXECUTED_AT:  2026-11-20T18:32:44Z
+GIT_SHA:      3ac17b887400c495c38e8cb060ffd3683f0f852f
+SOURCE_TREE:  packages/connectors=f535a1be5b451f187e1df54024c20e1c7c52f512 tests/connectors=58d4cca4c6cef01199edc9a11e9273bd3e72e88a
+EXECUTOR:     Linux development environment (separate from team hardware; not the Compose stack)
+ENV:          node v22.23.4; npm 10.9.9; vitest/5.1.0 linux-x64 node-v22.23.4; redis-server 7.0.15 (REDIS_TEST_URL=redis://localhost:6390/15); dependencies installed with npm ci from the branch lockfile
+DATA_MODE:    MOCK (synthetic, seed 481-FALL-2026)
+TEST_CLOCK:   injected fake clocks per test; fixed-clock tests use 2026-11-23T09:00:00+03:00
+========================================================================
+
+## 1. Type check
+PASS  tsc --noEmit -p packages/shared
+PASS  tsc --noEmit -p packages/connectors
+PASS  tsc --noEmit -p apps/mcp-server
+PASS  tsc --noEmit -p apps/api-gateway
+PASS  npm run typecheck --workspace @campus-orchestrator/web
+
+## 2. COMMAND: REDIS_TEST_URL=redis://localhost:6390/15 npx vitest run tests/connectors --reporter=verbose
+ ✓ tests/connectors/executionLogAndFaults.test.ts > Execution log: one event per call, upstreamCalled tells whether the connector ran > LIVE then CACHE_HIT: two requests, one connector execution (AC-03.6)
+ ✓ tests/connectors/executionLogAndFaults.test.ts > Execution log: one event per call, upstreamCalled tells whether the connector ran > the JSON line sink writes one parseable line per event (stderr by default)
+ ✓ tests/connectors/executionLogAndFaults.test.ts > Execution log: one event per call, upstreamCalled tells whether the connector ran > a throwing sink never breaks the tool call
+ ✓ tests/connectors/executionLogAndFaults.test.ts > A-04: stale-if-error with fault injection (TC-06, AC-03.7) > after the TTL a failing connector yields STALE with the ORIGINAL timestamp and a logged failure
+ ✓ tests/connectors/executionLogAndFaults.test.ts > A-04: stale-if-error with fault injection (TC-06, AC-03.7) > beyond 3 × TTL nothing is retained: structured ERROR, no fake data
+ ✓ tests/connectors/executionLogAndFaults.test.ts > A-05: circuit breaker visible in the log > 3 failures open the circuit; further calls are short-circuited without reaching the connector
+ ✓ tests/connectors/executionLogAndFaults.test.ts > A-05: measured durations (real timers) > a hanging upstream is cut at ~800 ms; an open circuit answers without waiting
+ ✓ tests/connectors/executionLogAndFaults.test.ts > A-06: provenance of cached data survives a mock → live switch > data cached from the mock stays isSimulated=true when served as STALE by an unavailable live connector
+ ✓ tests/connectors/executionLogAndFaults.test.ts > A-06: provenance of cached data survives a mock → live switch > every successful content block carries the five contract metadata fields
+ ✓ tests/connectors/redisIntegration.test.ts > A-02: cache backend selection (no Redis required) > REDIS_URL unset outside production → in-memory with a warning
+ ✓ tests/connectors/redisIntegration.test.ts > A-02: cache backend selection (no Redis required) > REDIS_URL unset with NODE_ENV=production → refuses to start
+ ✓ tests/connectors/redisIntegration.test.ts > A-02: cache backend selection (no Redis required) > invalid REDIS_URL → configuration error
+ ✓ tests/connectors/redisIntegration.test.ts > A-02: cache backend selection (no Redis required) > unreachable Redis → fails fast with ConnectorCacheUnavailableError (no silent in-memory fallback)
+ ✓ tests/connectors/redisIntegration.test.ts > A-02: cache backend selection (no Redis required) > the runtime factory propagates the failure instead of starting without the shared cache
+ ✓ tests/connectors/redisIntegration.test.ts > A-02: cache backend selection (no Redis required) > sync createConnectorRuntime() (used by createCampusMcpServer): production without REDIS_URL refuses to start
+ ✓ tests/connectors/redisIntegration.test.ts > A-02: cache backend selection (no Redis required) > sync createConnectorRuntime(): explicit env without REDIS_URL → in-memory, no warning
+ ✓ tests/connectors/redisIntegration.test.ts > A-02: cache backend selection (no Redis required) > sync createConnectorRuntime() with an unreachable REDIS_URL still answers (cache miss) and warns
+ ✓ tests/connectors/redisIntegration.test.ts > A-02: cache backend selection (no Redis required) > passwords never appear in log output
+ ✓ tests/connectors/redisIntegration.test.ts > A-02 / A-03 against a real Redis (REDIS_TEST_URL) > connects through REDIS_URL and reports the redis backend
+ ✓ tests/connectors/redisIntegration.test.ts > A-02 / A-03 against a real Redis (REDIS_TEST_URL) > sync createConnectorRuntime() with REDIS_URL uses the shared Redis once connected
+ ✓ tests/connectors/redisIntegration.test.ts > A-02 / A-03 against a real Redis (REDIS_TEST_URL) > A-03: a LIVE result is stored under the documented key with physical retention 3 × TTL
+ ✓ tests/connectors/redisIntegration.test.ts > A-02 / A-03 against a real Redis (REDIS_TEST_URL) > NFR-04: a second runtime (another MCP instance) gets a CACHE_HIT from the shared Redis
+ ✓ tests/connectors/redisIntegration.test.ts > A-02 / A-03 against a real Redis (REDIS_TEST_URL) > A-03 / TC-06: after the TTL a failing connector is answered STALE from Redis with the original timestamp
+ ✓ tests/connectors/redisIntegration.test.ts > A-02 / A-03 against a real Redis (REDIS_TEST_URL) > A-03: Redis really evicts the entry after the retention period (real time, TTL 1 s → 3 s)
+ ✓ tests/connectors/redisIntegration.test.ts > A-02 / A-03 against a real Redis (REDIS_TEST_URL) > A-07: two personas produce two hashed keys in Redis and no student ID
+ ✓ tests/connectors/redisIntegration.test.ts > A-02 / A-03 against a real Redis (REDIS_TEST_URL) > a stalled Redis degrades to a cache miss within the operation timeout; the tool still answers LIVE
+ ✓ tests/connectors/mockConnectors.test.ts > MockCafeteriaConnector (FR-03, FR-12) > returns lunch and dinner with all fields and calories > 0 on a weekday (TC-01)
+ ✓ tests/connectors/mockConnectors.test.ts > MockCafeteriaConnector (FR-03, FR-12) > never repeats the lunch soup or main dish at dinner
+ ✓ tests/connectors/mockConnectors.test.ts > MockCafeteriaConnector (FR-03, FR-12) > returns available=false with an explanation on weekends instead of throwing
+ ✓ tests/connectors/mockConnectors.test.ts > MockCafeteriaConnector (FR-03, FR-12) > returns available=false on a listed public holiday
+ ✓ tests/connectors/mockConnectors.test.ts > MockCafeteriaConnector (FR-03, FR-12) > defaults to today in Türkiye time (23:30 UTC is already the next day in TR)
+ ✓ tests/connectors/mockConnectors.test.ts > MockCafeteriaConnector (FR-03, FR-12) > rejects impossible calendar dates with ConnectorInputError
+ ✓ tests/connectors/mockConnectors.test.ts > MockCafeteriaConnector (FR-03, FR-12) > is deterministic: same seed + same date → identical menu; different seed → different week
+ ✓ tests/connectors/mockConnectors.test.ts > MockShuttleConnector (FR-04, FR-12) > returns the next three departures strictly after now, sorted ascending (TC-02)
+ ✓ tests/connectors/mockConnectors.test.ts > MockShuttleConnector (FR-04, FR-12) > excludes a departure equal to the current minute once seconds have passed
+ ✓ tests/connectors/mockConnectors.test.ts > MockShuttleConnector (FR-04, FR-12) > defaults to MAIN_RING
+ ✓ tests/connectors/mockConnectors.test.ts > MockShuttleConnector (FR-04, FR-12) > uses the weekend timetable on Saturdays
+ ✓ tests/connectors/mockConnectors.test.ts > MockShuttleConnector (FR-04, FR-12) > returns an empty list and 0 vehicles after the last departure
+ ✓ tests/connectors/mockConnectors.test.ts > MockShuttleConnector (FR-04, FR-12) > every route returns only future times for every minute of a weekday
+ ✓ tests/connectors/mockConnectors.test.ts > MockShuttleConnector (FR-04, FR-12) > rejects an unknown route and lists the valid routes
+ ✓ tests/connectors/mockConnectors.test.ts > MockShuttleConnector (FR-04, FR-12) > expands timetables correctly (first, last, interval)
+ ✓ tests/connectors/mockConnectors.test.ts > MockLibraryConnector (FR-05, FR-12) > reports simulated data whose totals equal the floor sums, within capacity (TC-03)
+ ✓ tests/connectors/mockConnectors.test.ts > MockLibraryConnector (FR-05, FR-12) > isolates a single floor and its own totals
+ ✓ tests/connectors/mockConnectors.test.ts > MockLibraryConnector (FR-05, FR-12) > keeps invariants for every 15-minute bucket of a weekday and a weekend day
+ ✓ tests/connectors/mockConnectors.test.ts > MockLibraryConnector (FR-05, FR-12) > is empty outside opening hours and busier at 14:00 than at 09:00 on a weekday
+ ✓ tests/connectors/mockConnectors.test.ts > MockLibraryConnector (FR-05, FR-12) > is deterministic for the same seed and instant, and stable within a 15-minute bucket
+ ✓ tests/connectors/mockConnectors.test.ts > MockLibraryConnector (FR-05, FR-12) > rejects an unknown floor selector
+ ✓ tests/connectors/mockConnectors.test.ts > MockCourseScheduleConnector (FR-06, FR-12) > requires a verified studentId from the auth context (TC-04)
+ ✓ tests/connectors/mockConnectors.test.ts > MockCourseScheduleConnector (FR-06, FR-12) > returns classes of the requested day sorted by startTime with all required fields
+ ✓ tests/connectors/mockConnectors.test.ts > MockCourseScheduleConnector (FR-06, FR-12) > always enrols BIL 481 plus four non-overlapping electives
+ ✓ tests/connectors/mockConnectors.test.ts > MockCourseScheduleConnector (FR-06, FR-12) > is deterministic per student, and different students get different schedules
+ ✓ tests/connectors/mockConnectors.test.ts > MockCourseScheduleConnector (FR-06, FR-12) > resolves TODAY in Türkiye time, accepts lower case, returns [] on weekends
+ ✓ tests/connectors/mockConnectors.test.ts > MockCourseScheduleConnector (FR-06, FR-12) > rejects an unknown day name and lists valid values
+ ✓ tests/connectors/mockConnectors.test.ts > MockCourseScheduleConnector (FR-06, FR-12) > BIL 481 meets on Tuesday 08:30–10:20 in TM-213 (UC-04 demo data)
+ ✓ tests/connectors/gatewayMetadataChain.test.ts > A-06: connector metadata through MCP HTTP + gateway adapter > cafeteria LIVE: data is the domain object, meta has the five contract fields
+ ✓ tests/connectors/gatewayMetadataChain.test.ts > A-06: connector metadata through MCP HTTP + gateway adapter > repeat within TTL: CACHE_HIT and the log shows one connector execution (AC-01.7)
+ ✓ tests/connectors/gatewayMetadataChain.test.ts > A-06: connector metadata through MCP HTTP + gateway adapter > library STALE after TTL + fault: HTTP 200, source STALE, original timestamp (AC-03.7 data part)
+ ✓ tests/connectors/gatewayMetadataChain.test.ts > A-06: connector metadata through MCP HTTP + gateway adapter > no retained data + fault: HTTP 503 UPSTREAM_UNAVAILABLE without fake data
+ ✓ tests/connectors/gatewayMetadataChain.test.ts > A-06: connector metadata through MCP HTTP + gateway adapter > impossible date: HTTP 400 INVALID_PARAMS and no connector execution (AC-01.5)
+ ✓ tests/connectors/gatewayMetadataChain.test.ts > A-06: connector metadata through MCP HTTP + gateway adapter > unknown route: HTTP 400 INVALID_PARAMS (AC-02.4)
+ ✓ tests/connectors/gatewayMetadataChain.test.ts > A-06: connector metadata through MCP HTTP + gateway adapter > course schedule: identity comes only from the gateway header; two students get their own data
+ ✓ tests/connectors/gatewayMetadataChain.test.ts > A-06: connector metadata through MCP HTTP + gateway adapter > the connector handlers are what answered (not the sample handlers)
+ ✓ tests/connectors/contractFixtures.test.ts > Contract fixtures (connector data + meta) match real connector output > query-cafeteria-success.json
+ ✓ tests/connectors/contractFixtures.test.ts > Contract fixtures (connector data + meta) match real connector output > query-shuttle-success.json
+ ✓ tests/connectors/contractFixtures.test.ts > Contract fixtures (connector data + meta) match real connector output > query-library-success.json
+ ✓ tests/connectors/contractFixtures.test.ts > Contract fixtures (connector data + meta) match real connector output > query-stale-success.json (library, TTL expired, injected upstream failure)
+ ✓ tests/connectors/resilientExecutor.test.ts > FR-09: TTL caching > first call is LIVE, repeated calls within the TTL are CACHE_HIT without upstream calls
+ ✓ tests/connectors/resilientExecutor.test.ts > FR-09: TTL caching > calls the connector again once the TTL has passed
+ ✓ tests/connectors/resilientExecutor.test.ts > FR-09: TTL caching > keeps the value physically for 3 × TTL (retention for stale fallback)
+ ✓ tests/connectors/resilientExecutor.test.ts > FR-10: stale-if-error fallback > serves the expired cached value with isStale=true and the ORIGINAL timestamp (TC-06)
+ ✓ tests/connectors/resilientExecutor.test.ts > FR-10: stale-if-error fallback > returns a structured, user-readable ERROR when there is no cached value
+ ✓ tests/connectors/resilientExecutor.test.ts > FR-10: stale-if-error fallback > treats an upstream call slower than 800 ms as a failure (default timeout)
+ ✓ tests/connectors/resilientExecutor.test.ts > FR-10: stale-if-error fallback > serves stale data when the upstream hangs and a retained value exists
+ ✓ tests/connectors/resilientExecutor.test.ts > FR-10: stale-if-error fallback > a cache outage never fails a successful upstream call
+ ✓ tests/connectors/resilientExecutor.test.ts > FR-11: circuit breaking inside the executor > after 3 failures the cafeteria makes ZERO upstream calls for 60 s, then probes once
+ ✓ tests/connectors/resilientExecutor.test.ts > FR-11: circuit breaking inside the executor > serves stale data while the circuit is open if a retained value exists
+ ✓ tests/connectors/resilientExecutor.test.ts > FR-11: circuit breaking inside the executor > NFR-03 isolation: a broken cafeteria does not affect library or shuttle
+ ✓ tests/connectors/resilientExecutor.test.ts > FR-11: circuit breaking inside the executor > caller errors (invalid input) are re-thrown and never trip the circuit
+ ✓ tests/connectors/dispatcherIntegration.test.ts > Connector handlers registered in the real ToolDispatcher > registers all four tools
+ ✓ tests/connectors/dispatcherIntegration.test.ts > Connector handlers registered in the real ToolDispatcher > UC-01: get_cafeteria_menu returns a weekday menu, then a cache hit
+ ✓ tests/connectors/dispatcherIntegration.test.ts > Connector handlers registered in the real ToolDispatcher > marks every successful mock answer as simulated (Project Definition §4.3)
+ ✓ tests/connectors/dispatcherIntegration.test.ts > Connector handlers registered in the real ToolDispatcher > UC-01: weekend menu is a normal answer with available=false
+ ✓ tests/connectors/dispatcherIntegration.test.ts > Connector handlers registered in the real ToolDispatcher > UC-02: get_shuttle_schedule returns only future departures, also when served from cache
+ ✓ tests/connectors/dispatcherIntegration.test.ts > Connector handlers registered in the real ToolDispatcher > UC-02: cached departures that have passed are removed before returning
+ ✓ tests/connectors/dispatcherIntegration.test.ts > Connector handlers registered in the real ToolDispatcher > UC-02: an invalid route is rejected by the dispatcher schema with -32602 before any connector call
+ ✓ tests/connectors/dispatcherIntegration.test.ts > Connector handlers registered in the real ToolDispatcher > UC-03: get_library_occupancy is simulated and consistent
+ ✓ tests/connectors/dispatcherIntegration.test.ts > Connector handlers registered in the real ToolDispatcher > UC-04: get_course_schedule uses only the verified identity; guests are refused by the dispatcher
+ ✓ tests/connectors/dispatcherIntegration.test.ts > Connector handlers registered in the real ToolDispatcher > an unknown day name becomes a structured -32602 error, not an internal error
+ ✓ tests/connectors/dispatcherIntegration.test.ts > Connector handlers registered in the real ToolDispatcher > an impossible date becomes a structured -32602 error
+ ✓ tests/connectors/dispatcherIntegration.test.ts > Connector handlers registered in the real ToolDispatcher > FR-10 through the dispatcher: upstream failure after expiry → isStale=true with original timestamp
+ ✓ tests/connectors/dispatcherIntegration.test.ts > Connector handlers registered in the real ToolDispatcher > live mode without confirmed access degrades gracefully instead of crashing
+ ✓ tests/connectors/fixedClockAndDeterminism.test.ts > CONNECTOR_FIXED_NOW parsing > accepts ISO-8601 with an explicit offset (with or without seconds/milliseconds, or Z)
+ ✓ tests/connectors/fixedClockAndDeterminism.test.ts > CONNECTOR_FIXED_NOW parsing > rejects values without an offset, impossible dates and free text
+ ✓ tests/connectors/fixedClockAndDeterminism.test.ts > CONNECTOR_FIXED_NOW parsing > is optional: unset or empty means real time
+ ✓ tests/connectors/fixedClockAndDeterminism.test.ts > CONNECTOR_FIXED_NOW parsing > fails fast through loadConnectorConfig when the value is invalid
+ ✓ tests/connectors/fixedClockAndDeterminism.test.ts > Anchored clock (starts at CONNECTOR_FIXED_NOW, then advances in real time) > returns the anchor first and then moves with the monotonic source
+ ✓ tests/connectors/fixedClockAndDeterminism.test.ts > Anchored clock (starts at CONNECTOR_FIXED_NOW, then advances in real time) > is used by the runtime when no clock is injected
+ ✓ tests/connectors/fixedClockAndDeterminism.test.ts > Anchored clock (starts at CONNECTOR_FIXED_NOW, then advances in real time) > an injected clock (unit tests) wins over the environment variable
+ ✓ tests/connectors/fixedClockAndDeterminism.test.ts > Tool defaults follow the fixed clock (reproducible acceptance runs) > cafeteria without a date uses the Türkiye date of the fixed clock
+ ✓ tests/connectors/fixedClockAndDeterminism.test.ts > Tool defaults follow the fixed clock (reproducible acceptance runs) > shuttle departures are strictly after the fixed clock (AC-02.2)
+ ✓ tests/connectors/fixedClockAndDeterminism.test.ts > Tool defaults follow the fixed clock (reproducible acceptance runs) > end of service: DORMITORY_LINE at 22:30 has no departures and is not an error (AC-02.5)
+ ✓ tests/connectors/fixedClockAndDeterminism.test.ts > A-01: deterministic synthetic output for a fixed seed and clock > two independent runtimes produce identical domain JSON for all four tools
+ ✓ tests/connectors/fixedClockAndDeterminism.test.ts > A-01: deterministic synthetic output for a fixed seed and clock > a different seed gives different data (the seed really drives the generator)
+ ✓ tests/connectors/fixedClockAndDeterminism.test.ts > A-01: deterministic synthetic output for a fixed seed and clock > weekday menu is complete (AC-01.2); weekend is explained, not an error (AC-01.4)
+ ✓ tests/connectors/fixedClockAndDeterminism.test.ts > A-01: deterministic synthetic output for a fixed seed and clock > library: bounds, totals and the isSimulated flag (AC-03.2, AC-03.3, AC-03.5)
+ ✓ tests/connectors/fixedClockAndDeterminism.test.ts > A-01: deterministic synthetic output for a fixed seed and clock > library: a single floor equals its entry in the ALL response of the same window (AC-03.4)
+ ✓ tests/connectors/configAndFactory.test.ts > Connector configuration (FR-09, FR-12) > defaults every connector to mock mode with the shared TTLs, 800 ms timeout and default seed
+ ✓ tests/connectors/configAndFactory.test.ts > Connector configuration (FR-09, FR-12) > reads the exact variable names used in .env.example
+ ✓ tests/connectors/configAndFactory.test.ts > Connector configuration (FR-09, FR-12) > fails fast on invalid values instead of silently guessing
+ ✓ tests/connectors/configAndFactory.test.ts > Connector factory: hot-swappable modes without code changes (FR-12) > builds the four mock connectors in mock mode
+ ✓ tests/connectors/configAndFactory.test.ts > Connector factory: hot-swappable modes without code changes (FR-12) > switches only the configured connector to live; live placeholders fail honestly
+ ✓ tests/connectors/configAndFactory.test.ts > Connector factory: hot-swappable modes without code changes (FR-12) > reports health per connector (UP for mock, DOWN for unavailable live)
+ ✓ tests/connectors/configAndFactory.test.ts > Connector factory: hot-swappable modes without code changes (FR-12) > two runs with the same seed produce identical data across all connectors (FR-12 acceptance)
+ ✓ tests/connectors/cacheStores.test.ts > Cache keys (FR-03, FR-09) > follows cache:<namespace>:<params>, matching cache:dining:<date> from FR-03
+ ✓ tests/connectors/cacheStores.test.ts > Cache keys (FR-03, FR-09) > isolates course schedules per student without exposing the raw student ID
+ ✓ tests/connectors/cacheStores.test.ts > InMemoryCacheStore > returns stored entries until physical retention ends
+ ✓ tests/connectors/cacheStores.test.ts > InMemoryCacheStore > isolates callers from mutations of cached objects (serialisation boundary)
+ ✓ tests/connectors/cacheStores.test.ts > InMemoryCacheStore > deletes keys
+ ✓ tests/connectors/cacheStores.test.ts > RedisCacheStore adapter (tested with a fake client, not a live Redis server) > writes JSON with PX = retention in milliseconds and reads it back
+ ✓ tests/connectors/cacheStores.test.ts > RedisCacheStore adapter (tested with a fake client, not a live Redis server) > treats a corrupted value as a cache miss
+ ✓ tests/connectors/cacheStores.test.ts > RedisCacheStore adapter (tested with a fake client, not a live Redis server) > deletes keys through DEL
+ ✓ tests/connectors/redisVsMemory.demo.test.ts > Design Decision: Redis (shared) vs process Map (per instance) > Option A — Map per instance: every instance misses; a restart loses the stale fallback
+ ✓ tests/connectors/redisVsMemory.demo.test.ts > Design Decision: Redis (shared) vs process Map (per instance) > Option B — shared store (Redis semantics): second instance hits; stale fallback survives restart
+ ✓ tests/connectors/personaIsolation.test.ts > A-07: two-persona course-schedule isolation > B asking right after A gets a fresh execution of B’s own schedule, never A’s cached one
+ ✓ tests/connectors/personaIsolation.test.ts > A-07: two-persona course-schedule isolation > keys are distinct per student and day and contain no student ID
+ ✓ tests/connectors/personaIsolation.test.ts > A-07: two-persona course-schedule isolation > cached values and execution-log lines contain no student ID
+ ✓ tests/connectors/personaIsolation.test.ts > A-07: two-persona course-schedule isolation > a guest or an empty student ID is rejected before any cache access or connector call
+ ✓ tests/connectors/circuitBreaker.test.ts > CircuitBreaker (FR-11): 3 consecutive failures → open 60 s → one half-open probe > stays closed for two failures and opens on the third
+ ✓ tests/connectors/circuitBreaker.test.ts > CircuitBreaker (FR-11): 3 consecutive failures → open 60 s → one half-open probe > a success resets the consecutive failure counter
+ ✓ tests/connectors/circuitBreaker.test.ts > CircuitBreaker (FR-11): 3 consecutive failures → open 60 s → one half-open probe > rejects calls for the whole 60 s cooldown and reports retryAt
+ ✓ tests/connectors/circuitBreaker.test.ts > CircuitBreaker (FR-11): 3 consecutive failures → open 60 s → one half-open probe > after the cooldown allows exactly one probe; success closes the circuit
+ ✓ tests/connectors/circuitBreaker.test.ts > CircuitBreaker (FR-11): 3 consecutive failures → open 60 s → one half-open probe > a failed probe re-opens the circuit for another full cooldown
+ ✓ tests/connectors/circuitBreaker.test.ts > CircuitBreaker (FR-11): 3 consecutive failures → open 60 s → one half-open probe > releasing a probe without a result keeps the circuit half-open for the next caller
+ Test Files  13 passed (13)
+      Tests  133 passed (133)
+
+## 3. COMMAND: npx vitest run   (whole repository, no Redis → real-Redis group SKIPPED, not counted as passed)
+ Test Files  27 passed (27)
+      Tests  293 passed | 8 skipped (301)
+
+## 4. This commit merged with current dev (95209cf, includes PR #26 and #28) in a temporary worktree, not pushed
+merge: no conflict
+tsc (after building packages/shared and packages/connectors — apps/mcp-server imports the connectors package through its dist, the same prerequisite as on dev): packages/connectors PASS; apps/mcp-server PASS; apps/api-gateway PASS
+npx vitest run (no Redis): Tests  293 passed | 8 skipped (301)
+REDIS_TEST_URL=… npx vitest run: Tests  301 passed (301)
+npm install --package-lock-only (npm 11.12.1) on the merged tree: lockfile unchanged
+
+## 5. Manual check: Redis stopped and restarted under a connected client (same environment, 20 Nov 2026)
+ACTUAL: before stop get → value; after 'redis-cli shutdown nosave' get rejected in 1 ms ('The client is offline');
+        after restart set/get succeeded; stderr: connector.cache warn 'Socket closed unexpectedly',
+        warn 'connect ECONNREFUSED 127.0.0.1:6391', info 'reconnected'.
+
+STATUS: see counts above. Skipped tests are reported as skipped, never as passed.
