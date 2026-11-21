@@ -3,7 +3,7 @@
 | Field | Detail |
 | :--- | :--- |
 | **Author** | Arda Çelik (241101065) — `@ardacelik11`, Connector & Data Lead |
-| **Version / Date** | 0.1 (draft), 20 November 2026 |
+| **Version / Date** | 1.0, 21 November 2026 |
 | **Scope** | The four campus data domains behind the MCP tools, their data constraints and the measurable quality of the connector/cache tier |
 | **Feeds** | `docs/Project_Definition_Document.md` (data/constraint parts), Design Document connector sections (Murat), QA Plan / Test Results Report (Sefa) |
 | **Code basis** | `packages/connectors` on `feat/pa3-connectors` (from `dev` @ `6cc1d07`) |
@@ -13,6 +13,7 @@
 | Version | Date | Change | Author |
 | :--- | :--- | :--- | :--- |
 | 0.1 | 20 Nov 2026 | First draft: feature sets, constraints, metric definitions, connector-tier measurements | Arda Çelik |
+| 1.0 | 21 Nov 2026 | Final: measured values checked against `docs/assignment3/evidence/connectors/` | Arda Çelik |
 
 ## Contribution Table
 

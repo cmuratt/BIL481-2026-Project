@@ -6,7 +6,7 @@
 | **Component** | `packages/connectors/**`, `tests/connectors/**`, connector data in `tests/contracts/fixtures/query-{cafeteria,shuttle,library,stale}-success.json`, `docs/assignment3/evidence/connectors/**` |
 | **For** | Murat Can Işık (MCP server wiring M-02, Dockerfile M-13, contract steward), Ahmet Sefa Efendioğlu (Compose, Test Results Report, QA Plan), Yunus Emre Biçer (web client, Acceptance Tests document) |
 | **Version / Date** | 1.0, 20 November 2026 |
-| **Branches / PRs** | `build/pa3-connectors-redis` (PR #30, adds the `redis` npm package only) → `feat/pa3-connectors` (PR #31, code, tests, fixtures, docs), both from `dev` @ `75fdd6b` |
+| **Branches / PRs** | `build/pa3-connectors-redis` (PR #30, `redis` npm package only — merged) → `feat/pa3-connectors` (PR #31, code, tests, fixtures, docs), from `dev` @ `75fdd6b` |
 | **Contract** | API Contract v1.1 (`docs/assignment3/contracts/API_CONTRACT.md`, PR #23) |
 
 ---
@@ -117,7 +117,7 @@ the internal network once the MCP image exists, or against a throwaway local Red
 
 **QA Plan finding (TC-06):** step 3 expects the stale answer "< 50 ms" while the upstream is made to *time out* (> 800 ms).
 The first fallback can only answer after the 800 ms cutoff (measured ≈ 800 ms). "< 50 ms" holds for an open circuit
-(about 1 ms) or a fast-failing upstream (about 1 ms). Suggest: step 3 "≤ 800 ms + 50 ms", step 5 "< 50 ms". Your document,
+(1 ms) or a fast-failing upstream (a few ms). Suggest: step 3 "≤ 800 ms + 50 ms", step 5 "< 50 ms". Your document,
 your decision.
 
 ## 6. For Yunus — web client and Acceptance Tests document
@@ -157,6 +157,6 @@ hardware and not the Compose stack. Evidence files carry `GIT_SHA` and `SOURCE_T
 
 | # | Needed from | What exactly | Blocks |
 | :--- | :--- | :--- | :--- |
-| 1 | Murat or Sefa (reviewer) | review and merge PR #30 (`redis` dependency) first, then PR #31 (this branch); afterwards Murat updates the three "Redis not wired" texts (§4) | every end-to-end run, AT-01..AT-03, connector logs in the demo |
+| 1 | Murat or Sefa (reviewer) | PR #30 (`redis` dependency) is merged; review and merge PR #31 (this branch); afterwards Murat updates the three "Redis not wired" texts (§4) | every end-to-end run, AT-01..AT-03, connector logs in the demo |
 | 2 | Sefa | after 1: `docker compose up --build` with all four services; record the §5 observation commands | Redis-in-Compose evidence for A-02 / A-03 |
 | 3 | Sefa | after 2: run AT-01..AT-03 with the §5 recipes; load run for end-to-end p95 / hit ratio | A-09 / A-10 end-to-end part |
