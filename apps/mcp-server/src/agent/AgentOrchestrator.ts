@@ -263,10 +263,18 @@ export class AgentOrchestrator implements IAgentOrchestrator {
           break;
         }
 
-        turns.push({ role: 'model', functionCalls: response.functionCalls });
+        // The history sent back to the provider holds the arguments that are really executed, so an
+        // identity key the model added (even the caller's own id) neither leaks nor aborts the run.
+        turns.push({
+          role: 'model',
+          functionCalls: response.functionCalls.map((call) => ({
+            ...call,
+            args: stripIdentityArguments(call.args),
+          })),
+        });
         const results: LlmFunctionResult[] = [];
         for (const call of response.functionCalls) {
-          const outcome = await this.executeCall(call, auth, pii, declaredNames, invoked);
+          const outcome = await this.executeCall(call, auth, pii, declaredNames, invoked, round);
           if (outcome.badge) {
             yield { type: 'tool', ...outcome.badge };
           }
@@ -303,7 +311,8 @@ export class AgentOrchestrator implements IAgentOrchestrator {
     auth: AuthContext,
     pii: PiiContext,
     declaredNames: ReadonlySet<string>,
-    invoked: string[]
+    invoked: string[],
+    round: number
   ): Promise<{ badge?: AgentTelemetryBadge; result: LlmFunctionResult }> {
     if (!declaredNames.has(call.name)) {
       return {
@@ -335,6 +344,24 @@ export class AgentOrchestrator implements IAgentOrchestrator {
     const measured = Math.max(0, Math.round(this.nowMs() - startedAt));
     const status = toolStatus(result);
     const durationMs = status === 'ERROR' ? measured : (result.durationMs ?? measured);
+
+    // AC-04.5 evidence: what was really dispatched (no identity key; the identity is in `auth`).
+    try {
+      this.outboundLog?.recordToolCall?.({
+        event: 'tool_call',
+        timestamp: new Date().toISOString(),
+        round,
+        toolName: call.name,
+        arguments: scrubDeep(args, pii),
+        status,
+        durationMs,
+      });
+    } catch (err: unknown) {
+      console.error(
+        '[agent] tool call log failed:',
+        err instanceof Error ? `${err.name}: ${err.message}` : 'unknown error'
+      );
+    }
 
     return {
       badge: { toolName: call.name, status, durationMs },

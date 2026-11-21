@@ -128,6 +128,75 @@ describe('Identity never travels in tool arguments (AC-04.5)', () => {
   });
 });
 
+describe('Tool call log (AC-04.5 evidence)', () => {
+  it('records one line per executed tool with the dispatched arguments and no identity', async () => {
+    const { agent, log } = setup();
+    await collect(agent.run(UC04, student));
+
+    expect(log.toolCalls.map((entry) => entry.toolName)).toEqual([
+      TOOL_NAMES.COURSE_SCHEDULE,
+      TOOL_NAMES.SHUTTLE_SCHEDULE,
+      TOOL_NAMES.CAFETERIA_MENU,
+    ]);
+    for (const entry of log.toolCalls) {
+      expect(entry.event).toBe('tool_call');
+      expect(entry.round).toBe(0);
+      expect(['LIVE', 'CACHE_HIT', 'STALE', 'ERROR']).toContain(entry.status);
+      expect(typeof entry.durationMs).toBe('number');
+      expect(typeof entry.arguments).toBe('object');
+    }
+    const serialized = JSON.stringify(log.toolCalls);
+    expect(serialized).not.toContain(STUDENT_ID);
+    expect(serialized.toLowerCase()).not.toContain('studentid');
+  });
+
+  it('logs the executed arguments, not the identity keys the model added', async () => {
+    const script = async (_req: unknown, index: number) =>
+      index === 0
+        ? {
+            functionCalls: [
+              {
+                name: TOOL_NAMES.COURSE_SCHEDULE,
+                args: { day: 'TUESDAY', studentId: STUDENT_ID, email: 'x@y.edu' },
+              },
+            ],
+          }
+        : { functionCalls: [], text: 'Tamam.' };
+    const { agent, dispatchSpy, log } = setup({}, new FakeProvider(script));
+    const events = await collect(agent.run('derslerim?', student));
+
+    // The model used the caller's OWN id: the run still succeeds instead of failing closed.
+    expect(ofType(events, 'error')).toHaveLength(0);
+    expect(ofType(events, 'done')).toHaveLength(1);
+    expect(dispatchSpy.mock.calls[0]![1]).toEqual({ day: 'TUESDAY' });
+    expect(log.toolCalls).toHaveLength(1);
+    expect(log.toolCalls[0]!.arguments).toEqual({ day: 'TUESDAY' });
+
+    // The history sent back to the provider carries the same cleaned arguments.
+    const secondRequest = JSON.stringify(log.entries[1]!.request);
+    expect(secondRequest).not.toContain(STUDENT_ID);
+    expect(secondRequest).not.toContain('x@y.edu');
+  });
+
+  it('writes no line for a refused (repeated or unknown) tool call', async () => {
+    const script = async (_req: unknown, index: number) => {
+      if (index === 0) return { functionCalls: [{ name: TOOL_NAMES.SHUTTLE_SCHEDULE, args: {} }] };
+      if (index === 1) {
+        return {
+          functionCalls: [
+            { name: TOOL_NAMES.SHUTTLE_SCHEDULE, args: { route: 'METRO_LINE' } },
+            { name: 'delete_everything', args: {} },
+          ],
+        };
+      }
+      return { functionCalls: [], text: 'Tamam.' };
+    };
+    const { agent, log } = setup({}, new FakeProvider(script));
+    await collect(agent.run('ring ne zaman?', guest));
+    expect(log.toolCalls.map((entry) => entry.toolName)).toEqual([TOOL_NAMES.SHUTTLE_SCHEDULE]);
+  });
+});
+
 describe('Each tool at most once (AC-04.4)', () => {
   it('refuses a repeated tool call without a second execution or badge', async () => {
     const script = async (req: any, index: number) => {
