@@ -83,7 +83,8 @@ function check(name: string, body: unknown): void {
   if (UPDATE) {
     writeFileSync(file, text);
   }
-  expect(readFileSync(file, 'utf8')).toBe(text);
+  // Git may check the fixtures out with CRLF on Windows (core.autocrlf); compare content, not line endings.
+  expect(readFileSync(file, 'utf8').replace(/\r\n/g, '\n')).toBe(text);
 }
 
 describe('Contract fixtures (connector data + meta) match real connector output', () => {
