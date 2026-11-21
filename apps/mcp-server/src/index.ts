@@ -112,8 +112,10 @@ export async function startHttpServer(
 
     // 3. Streamable HTTP (SSE) transport endpoints (FR-02)
     if ((pathname === '/mcp' || pathname === '/sse') && req.method === 'GET') {
-      const sessionId = Math.random().toString(36).substring(2, 12);
-      const transport = new SSEServerTransport(`/mcp/messages?sessionId=${sessionId}`, res);
+      // The SDK appends its own `sessionId` (a UUID) to the endpoint it announces to the client and
+      // overwrites any `sessionId` already in the URL, so the session table must use that UUID.
+      const transport = new SSEServerTransport('/mcp/messages', res);
+      const sessionId = transport.sessionId;
       sseSessions.set(sessionId, transport);
 
       transport.onclose = () => {
