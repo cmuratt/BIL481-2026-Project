@@ -11,10 +11,22 @@ import {
   jsonRpcResult,
 } from './wire/jsonRpc.js';
 import type { ConnectorRuntime } from '@campus-orchestrator/connectors';
+import { AGENT_STREAM_PATH, createAgentStreamHandler } from './agent/agentStreamHandler.js';
+import { createGeminiProviderFromEnv } from './agent/GeminiProvider.js';
+import { createOutboundLogFromEnv, type OutboundLog } from './agent/outboundLog.js';
+import type { LlmProvider } from './agent/LlmProvider.js';
 
 export interface McpServerStartOptions {
   /** Injected connector runtime (tests); defaults to one built from process.env. */
   connectorRuntime?: ConnectorRuntime;
+  /**
+   * LLM provider for POST /internal/agent/stream. When omitted it is built from GEMINI_API_KEY;
+   * without a key the endpoint answers 503 (it never falls back to a fake provider). Tests inject
+   * a FakeProvider explicitly.
+   */
+  agentProvider?: LlmProvider;
+  /** Outbound request log of the agent; defaults to createOutboundLogFromEnv(). */
+  agentOutboundLog?: OutboundLog;
 }
 
 /** Describes the connector tier for logs and /health. Redis is not wired yet (Arda A-02). */
@@ -39,6 +51,7 @@ export * from './agent/FakeProvider.js';
 export * from './agent/GeminiProvider.js';
 export * from './agent/piiScrubber.js';
 export * from './agent/outboundLog.js';
+export * from './agent/agentStreamHandler.js';
 export * from './server.js';
 export * from './wire/jsonRpc.js';
 export * from './mocks/sampleMockHandlers.js';
@@ -82,6 +95,13 @@ export async function startHttpServer(
     connectorRuntime: options.connectorRuntime,
   });
   const runtimeInfo = describeRuntime(connectorRuntime);
+  const agentProvider = options.agentProvider ?? createGeminiProviderFromEnv(process.env);
+  const agentInfo = { provider: agentProvider?.name ?? 'not-configured' };
+  const handleAgentStream = createAgentStreamHandler({
+    dispatcher,
+    provider: agentProvider,
+    outboundLog: options.agentOutboundLog ?? createOutboundLogFromEnv(),
+  });
 
   // Track active SSE transport sessions by sessionId
   const sseSessions = new Map<string, SSEServerTransport>();
@@ -102,6 +122,7 @@ export async function startHttpServer(
         transports: ['stdio', 'streamable-http (SSE)'],
         tools: TOOL_DEFINITIONS.length,
         runtime: runtimeInfo,
+        agent: agentInfo,
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
       };
@@ -253,6 +274,12 @@ export async function startHttpServer(
       return;
     }
 
+    // Internal agent stream (M-08): gateway -> agent, SSE frames of API Contract §3.3
+    if (pathname === AGENT_STREAM_PATH) {
+      await handleAgentStream(req, res);
+      return;
+    }
+
     // 5. Default 404 for unmapped routes
     res.writeHead(404, { 'Content-Type': 'application/json' });
     res.end(
@@ -268,6 +295,7 @@ export async function startHttpServer(
       console.log(`[MCP Server] Running on Streamable HTTP http://${host}:${port}/mcp`);
       console.log(`[MCP Server] Health check available at http://${host}:${port}/health`);
       console.log('[MCP Server] Runtime:', JSON.stringify(runtimeInfo));
+      console.log(`[MCP Server] Agent stream: ${AGENT_STREAM_PATH} (provider: ${agentInfo.provider})`);
       if (runtimeInfo.redisUrlConfigured) {
         console.log(
           '[MCP Server] REDIS_URL is set but the Redis client is not wired yet; using in-memory cache (BLOCKED: Arda A-02).'
