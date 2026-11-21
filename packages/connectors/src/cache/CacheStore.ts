@@ -7,8 +7,8 @@
  * stale-if-error fallback.
  *
  * Two implementations share this contract:
- * - InMemoryCacheStore: process-local Map; used by tests, offline development and the demo.
- * - RedisCacheStore: shared Redis instance; the production target (Phase 3 wiring).
+ * - InMemoryCacheStore: process-local Map; unit tests and offline development only.
+ * - RedisCacheStore: shared Redis instance; used whenever REDIS_URL is set (Compose, demo).
  */
 
 export interface CacheEntry<T> {
@@ -17,6 +17,12 @@ export interface CacheEntry<T> {
   cachedAt: string;
   /** ISO timestamp after which the value must not be served as fresh. */
   freshUntil: string;
+  /**
+   * Provenance of the value: true when a mock (synthetic) connector produced it. Kept with the value so
+   * that data cached in mock mode is still labelled synthetic if it is later served as STALE after a
+   * switch to live mode. Optional for entries written before this field existed.
+   */
+  isSimulated?: boolean;
 }
 
 export interface CacheStore {

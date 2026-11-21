@@ -1,0 +1,26 @@
+========================================================================
+Campus Data Orchestrator — Test run on Arda's computer
+========================================================================
+EXECUTED_AT:  2026-11-20T18:52:16Z
+GIT_SHA:      506899f4c98407afdf496f4c9a6b144d850e2e32
+SOURCE_TREE:  packages/connectors=f535a1be5b451f187e1df54024c20e1c7c52f512 tests/connectors=58d4cca4c6cef01199edc9a11e9273bd3e72e88a
+EXECUTOR:     Arda Çelik (own computer)
+ENV:          macOS 15.0.1 (arm64); node v26.13.1; npm 11.20.0; no Redis installed
+DATA_MODE:    MOCK (synthetic, seed 481-FALL-2026)
+COMMAND:      npm ci; build shared + connectors; tsc --noEmit (5 workspaces); npx vitest run
+========================================================================
+
+PASS  npm ci
+PASS  build: packages/shared
+PASS  build: packages/connectors
+PASS  typecheck: packages/shared
+PASS  typecheck: packages/connectors
+PASS  typecheck: apps/mcp-server
+PASS  typecheck: apps/api-gateway
+PASS  typecheck: apps/web
+PASS  vitest: whole repository
+      Test Files 27 passed (27)
+      Tests 293 passed | 8 skipped (301)
+
+Skipped tests are the real-Redis group (needs REDIS_TEST_URL); they are reported as skipped, not passed.
+Real-Redis results: connector-tier-real-redis.txt and vitest-connectors.txt in this folder.

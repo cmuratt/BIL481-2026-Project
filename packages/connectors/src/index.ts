@@ -6,6 +6,8 @@
 export * from './types.js';
 export * from './errors.js';
 export * from './config.js';
+export * from './clock.js';
+export * from './logging.js';
 
 export * from './mock/seededRandom.js';
 export * from './mock/turkeyTime.js';
@@ -24,6 +26,7 @@ export * from './factory.js';
 export * from './cache/CacheStore.js';
 export * from './cache/InMemoryCacheStore.js';
 export * from './cache/RedisCacheStore.js';
+export * from './cache/redisClient.js';
 export * from './cache/cacheKeys.js';
 
 export * from './resilience/CircuitBreaker.js';
