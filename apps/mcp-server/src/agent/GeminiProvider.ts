@@ -13,11 +13,20 @@ import {
  * npm package. The API key travels only in the `x-goog-api-key` header; it is never part of the URL,
  * the request body, the outbound log or an error message.
  *
- * Model default is configurable (`GEMINI_MODEL`). Verify the model name against the current Gemini
- * API documentation when the first live run is made (AC-04.11).
+ * Model default is configurable (`GEMINI_MODEL`). On 2026-11-21 a new free-tier key got HTTP 404 for
+ * `gemini-2.0-flash`, `gemini-2.5-flash` and `gemini-2.5-flash-lite` (no longer offered) although the
+ * models list still showed them, and 503 "high demand" for `gemini-3.8-flash`. The default
+ * `gemini-3.5-flash-lite` answered tool calls in about 0.7 s. Re-check before the demo.
+ *
+ * Gemini 3 models attach a `thoughtSignature` to function calls; it is kept on `LlmFunctionCall` and
+ * sent back unchanged, otherwise the next round fails with HTTP 400.
  */
 
-export const DEFAULT_GEMINI_MODEL = 'gemini-2.0-flash';
+export const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite';
+/** Extra attempts after a transient HTTP status (503/429/500/502/504), all inside the one timeout. */
+export const DEFAULT_GEMINI_MAX_RETRIES = 2;
+export const DEFAULT_GEMINI_RETRY_DELAY_MS = 500;
+const RETRYABLE_STATUS = new Set([429, 500, 502, 503, 504]);
 export const DEFAULT_GEMINI_BASE_URL = 'https://generativelanguage.googleapis.com/v1beta';
 export const DEFAULT_GEMINI_TIMEOUT_MS = 15_000;
 
@@ -27,8 +36,32 @@ export interface GeminiProviderOptions {
   apiKey: string;
   model?: string;
   baseUrl?: string;
+  /** Overall limit of one `generate` call, retries included. */
   timeoutMs?: number;
+  /** Extra attempts after a transient HTTP status. Default 2; 0 disables retrying. */
+  maxRetries?: number;
+  /** Base delay before a retry; doubles per attempt (500, 1000 ms). */
+  retryDelayMs?: number;
   fetchImpl?: typeof fetch;
+}
+
+/** Resolves after `ms`, or rejects as soon as `signal` aborts. */
+function sleep(ms: number, signal: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new Error('aborted'));
+      return;
+    }
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new Error('aborted'));
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
 }
 
 /** Gemini accepts an OpenAPI subset; anything else (pattern, default, additionalProperties) is dropped. */
@@ -91,7 +124,11 @@ function toContents(turns: LlmTurn[]) {
         parts.push({ text: turn.text });
       }
       for (const call of turn.functionCalls ?? []) {
-        parts.push({ functionCall: { name: call.name, args: call.args } });
+        // Gemini 3 models require the signature of a function call part to be echoed back.
+        parts.push({
+          functionCall: { name: call.name, args: call.args },
+          ...(call.thoughtSignature ? { thoughtSignature: call.thoughtSignature } : {}),
+        });
       }
       return { role: 'model', parts };
     }
@@ -123,6 +160,8 @@ export class GeminiProvider implements LlmProvider {
   private readonly model: string;
   private readonly baseUrl: string;
   private readonly timeoutMs: number;
+  private readonly maxRetries: number;
+  private readonly retryDelayMs: number;
   private readonly fetchImpl: typeof fetch;
 
   constructor(options: GeminiProviderOptions) {
@@ -133,6 +172,8 @@ export class GeminiProvider implements LlmProvider {
     this.model = options.model?.trim() || DEFAULT_GEMINI_MODEL;
     this.baseUrl = (options.baseUrl ?? DEFAULT_GEMINI_BASE_URL).replace(/\/+$/, '');
     this.timeoutMs = options.timeoutMs ?? DEFAULT_GEMINI_TIMEOUT_MS;
+    this.maxRetries = Math.max(0, options.maxRetries ?? DEFAULT_GEMINI_MAX_RETRIES);
+    this.retryDelayMs = Math.max(0, options.retryDelayMs ?? DEFAULT_GEMINI_RETRY_DELAY_MS);
     this.fetchImpl = options.fetchImpl ?? fetch;
   }
 
@@ -141,30 +182,48 @@ export class GeminiProvider implements LlmProvider {
     const combined = signal ? AbortSignal.any([signal, timeout]) : timeout;
     const url = `${this.baseUrl}/models/${encodeURIComponent(this.model)}:generateContent`;
 
-    let response: Response;
-    try {
-      response = await this.fetchImpl(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.apiKey },
-        body: JSON.stringify(buildGeminiBody(request)),
-        signal: combined,
-      });
-    } catch (err: unknown) {
-      if (timeout.aborted) {
-        throw new LlmProviderError(`Gemini request timed out after ${this.timeoutMs} ms.`, 'timeout');
+    const body = JSON.stringify(buildGeminiBody(request));
+
+    let response: Response | undefined;
+    for (let attempt = 0; attempt <= this.maxRetries; attempt += 1) {
+      try {
+        response = await this.fetchImpl(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': this.apiKey },
+          body,
+          signal: combined,
+        });
+      } catch (err: unknown) {
+        if (timeout.aborted) {
+          throw new LlmProviderError(`Gemini request timed out after ${this.timeoutMs} ms.`, 'timeout');
+        }
+        if (signal?.aborted) {
+          throw new LlmProviderError('Gemini request was cancelled.', 'timeout');
+        }
+        throw new LlmProviderError(
+          `Gemini request failed: ${err instanceof Error ? err.name : 'network error'}.`,
+          'http'
+        );
       }
-      if (signal?.aborted) {
+
+      // Transient overload (e.g. 503 "high demand"): wait and try again, bounded by the one timeout.
+      if (!RETRYABLE_STATUS.has(response.status) || attempt === this.maxRetries) {
+        break;
+      }
+      await response.body?.cancel().catch(() => {});
+      try {
+        await sleep(this.retryDelayMs * 2 ** attempt, combined);
+      } catch {
+        if (timeout.aborted) {
+          throw new LlmProviderError(`Gemini request timed out after ${this.timeoutMs} ms.`, 'timeout');
+        }
         throw new LlmProviderError('Gemini request was cancelled.', 'timeout');
       }
-      throw new LlmProviderError(
-        `Gemini request failed: ${err instanceof Error ? err.name : 'network error'}.`,
-        'http'
-      );
     }
 
-    if (!response.ok) {
+    if (!response || !response.ok) {
       // Status only: the response body is not copied into errors or logs.
-      throw new LlmProviderError(`Gemini API answered HTTP ${response.status}.`, 'http');
+      throw new LlmProviderError(`Gemini API answered HTTP ${response?.status ?? 0}.`, 'http');
     }
 
     let payload: any;
@@ -185,6 +244,9 @@ export class GeminiProvider implements LlmProvider {
       .map((part) => ({
         name: part.functionCall.name as string,
         args: (part.functionCall.args ?? {}) as Record<string, unknown>,
+        ...(typeof part.thoughtSignature === 'string' && part.thoughtSignature.length > 0
+          ? { thoughtSignature: part.thoughtSignature as string }
+          : {}),
       }));
     const text = parts
       .map((part) => (typeof part?.text === 'string' ? part.text : ''))

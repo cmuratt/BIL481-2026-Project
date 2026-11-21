@@ -20,6 +20,12 @@ export interface LlmToolDeclaration {
 export interface LlmFunctionCall {
   name: string;
   args: Record<string, unknown>;
+  /**
+   * Opaque provider token attached to a function call (Gemini 3 `thoughtSignature`). The provider
+   * must send it back unchanged in the next round or the API rejects the request with HTTP 400.
+   * The orchestrator never reads or alters it.
+   */
+  thoughtSignature?: string;
 }
 
 export interface LlmFunctionResult {
