@@ -7,7 +7,7 @@
 | **Course** | BIL 481 Software Engineering, Fall 2026, TOBB University of Economics and Technology |
 | **Assignment** | Project Assignment 2 (Design & Skeleton); updated during Project Assignment 3 (Implementation & Deployment) |
 | **Group Name** | Group-ASYM |
-| **Document Version / Date** | Version 1.1 (PA3 working update — web client), 20 November 2026. Version 1.0 (PA2 final deliverable, 15 November 2026) is preserved in the Git history of `main`; see the [Change Record](#change-record). |
+| **Document Version / Date** | Version 1.2 (PA3 working update — web client, MCP server and agent), 21 November 2026. Version 1.0 (PA2 final deliverable, 15 November 2026) is preserved in the Git history of `main`; see the [Change Record](#change-record). |
 | **Repository Filepath** | `docs/Design_Document.md` |
 | **Related Baseline Documents** | `docs/Project_Definition_Document.md`, `docs/Project_Plan_Document.md`, `docs/Requirements_Document.md`, `docs/QA_Plan.md` |
 
@@ -26,6 +26,8 @@ In compliance with the BIL 481 Project Assignment 2 specification, each team mem
 
 **PA3 update (Version 1.1):** The web client sections (1.2, 1.3, 2.1, 2.2.2, 2.3.3, 2.4, 3.2–3.6, 5) were updated by Murat Can Işık (document lead, M-11) from the web client handover written by Yunus Emre Biçer ([`docs/assignment3/handovers/yunus.md`](assignment3/handovers/yunus.md), Y-13). The facts come from that handover and were checked against `dev` at `6cc1d07`; the wording is Murat's. The gateway, MCP/agent and connector sections are updated in later PA3 revisions.
 
+**PA3 update (Version 1.2):** The MCP server and agent sections (1.2, 1.3, 2.1 diagram, 2.2.1, 2.3.2, 3.5, 5, 6) were updated by Murat Can Işık (document lead and author of the MCP server and agent, M-11) from his own handover ([`docs/assignment3/handovers/murat.md`](assignment3/handovers/murat.md)), checked against `dev` at `db57ed9`. Statements that depend on pull requests that are not merged yet say so. The gateway and connector sections are not part of this revision; they follow when their handovers are merged.
+
 ---
 
 ## Change Record
@@ -34,6 +36,7 @@ In compliance with the BIL 481 Project Assignment 2 specification, each team mem
 | :--- | :--- | :--- | :--- | :--- |
 | 1.0 | 15 Nov 2026 | All | PA2 final deliverable (design and skeleton). | All members (see attribution above) |
 | 1.1 | 20 Nov 2026 | Header, 1.2, 1.3, 2.1.1, 2.1.2, 2.2.2, 2.3.3, 2.4, 3.2–3.6, 5, 6 | Web client moved from *Planned* to *Implemented* (Next.js 16 App Router, React 19, CSS Modules); three dashboard cards instead of four; router step for personal-timetable words and held-out measurement; current web interfaces; implemented UI vs. wireframe differences; Next.js rewrite of `/api/v1/*` in the sequence diagrams; **design decision: no automatic SSE reconnect** (API Contract v1.1 §3.3). Source: web client handover (Y-13). | Murat Can Işık (source: Yunus Emre Biçer) |
+| 1.2 | 21 Nov 2026 | Header, 1.2, 1.3, 2.1 diagram, 2.2.1, 2.3.2, 3.5, 5, 6 | MCP server and AI agent moved from *Planned* to *Implemented*: connector runtime behind the four tools (M-02), real `AgentOrchestrator` with `LlmProvider`, `GeminiProvider` and `FakeProvider`, PII scrubber and redacted outbound log, `POST /internal/agent/stream` (SSE, API Contract v1.1 §3.3). UC-04 flow rewritten to what the code does: the agent runs inside the MCP process and calls the dispatcher in-process; tools run once each, in the order the model asks. **Honest limits recorded:** the real Gemini run was done only directly on the agent (not through the stream endpoint, gateway and UI); `tools/call` through standard MCP clients is an open gap (content type `json`). Source: MCP/agent handover (`handovers/murat.md`) and the code on `dev` at `db57ed9`; PR #34 (stream endpoint), #35 (Gemini 3 fix) and the SSE session fix are marked as open. | Murat Can Işık |
 
 ---
 
@@ -112,16 +115,19 @@ To ensure absolute engineering transparency, the system architecture distinguish
   - **Campus Connectors & Resilience (`packages/connectors`):** Pluggable `ICampusConnector` contracts, deterministic seeded synthetic mock data generators (Mulberry32 PRNG), `InMemoryCacheStore`, 3-state circuit breaker state machine, and stale-if-error fallback executor (FR-03–06, FR-09–12).
   - **Test Infrastructure:** Vitest 5.1.0 test runner executing 146 offline unit and integration tests across 10 test files with zero external service dependencies (NFR-08). *(PA2 baseline. On `dev` at `6cc1d07`, 20 Nov 2026: 230 tests in 20 files, of which 111 are web tests.)*
 
-- **Implemented in Phase 3 (PA3, state of `dev` at `6cc1d07`, 20 November 2026) — web client only in this revision:**
+- **Implemented in Phase 3 (PA3, state of `dev` at `db57ed9`, 21 November 2026) — web client, MCP server and agent in this revision:**
   - **Presentation UI (`apps/web`):** Next.js 16.4.6 (App Router), React 19.3.1 and CSS Modules (no Tailwind; team decision, 19 Nov 2026), Turkish UI. Pages: dashboard `/`, assistant `/asistan`, login `/giris`, health check `/healthz` (FR-18, NFR-09 web part).
   - **Dashboard cards and gateway client:** three cards (cafeteria, shuttle, library) using a typed client for `POST /api/v1/query` (API Contract v1.1 §3.2, §3.4) and a fixture mode with a visible "Örnek veri modu" (sample data mode) banner (FR-18, FR-19).
   - **Mock-SSO login and sign-out (FR-15):** two fixed synthetic personas; JWT kept only in `sessionStorage`.
-  - **Chat stream client (FR-17):** `fetch()`-based SSE parser and turn-state reducer for `POST /api/v1/chat/stream`. **The chat screen that uses it is still planned (Y-07).**
+  - **Chat stream client (FR-17):** `fetch()`-based SSE parser and turn-state reducer for `POST /api/v1/chat/stream`. The chat screen that uses it (Y-07) is merged (PR #32).
   - **Web Docker image** with standalone Next.js output and `/healthz` (NFR-09, web part).
+  - **MCP server on real connectors (M-02, PR #26):** the four tools are served by the `packages/connectors` runtime (mock mode, TTL cache, stale-if-error, circuit breaker); responses carry `isSimulated`, `isStale`, `source`, `timestamp` and `durationMs`; the internal service sends no CORS header. MCP Docker image (M-13).
+  - **AI agent (M-04..M-07, PR #29):** `AgentOrchestrator` with an `LlmProvider` boundary, `GeminiProvider` (REST through `fetch`, no SDK), `FakeProvider` for tests only, fail-closed PII scrubber and a redacted outbound log (FR-13, FR-14).
+  - **Open pull requests (not on `dev` yet):** `POST /internal/agent/stream` (M-08, PR #34); Gemini 3 `thoughtSignature` handling, retry on transient errors and the default model `gemini-3.5-flash-lite` (PR #35); SSE session fix for the legacy MCP transport.
 
 - **Planned for Phase 3 (Core Development Roadmap):**
   - **Presentation UI (remaining):** chat screen with streamed answer and one badge per tool (Y-07), remaining chat states (Y-08) and cross-browser/viewport checks (Y-10).
-  - **AI Agent Integration:** Google Gemini API/SDK client integration (`@google/genai` or `@google/generative-ai`), live multi-tool function calling, and automated prompt PII scrubber (FR-13, FR-14; Phase 2 provides `IAgentOrchestrator` skeleton).
+  - **AI Agent — remaining work:** run the real chain (web chat → gateway → `/internal/agent/stream` → Gemini) once PR #34 and #35 are merged; until then the acceptance test AT-04 and criterion AC-04.11 are **not** satisfied. Results obtained with `FakeProvider` are never reported as the real UC-04 run.
   - **Centralized Infrastructure & Caching:** Live Redis 7.2 containerized service (replacing in-memory stores for multi-instance cache and atomic sliding-window rate limiting) via Docker Compose (FR-08–11).
   - **Production Gateway Plugins:** Ecosystem plugins (`@fastify/jwt`, `@fastify/rate-limit`, `@fastify/http-proxy`) and official MCP Streamable HTTP transport integration.
   - **Persistence & Telemetry:** PostgreSQL 16 database and Prisma ORM for cryptographically hashed student audit records, tool execution latency telemetry, and error logging (FR-20).
@@ -150,10 +156,10 @@ flowchart TD
         AuthBoundary --> RateLimiter
     end
 
-    subgraph Tier3["3. AI Agent & Orchestration Tier (Phase 3 Integration)"]
-        Agent["Agent Orchestrator Skeleton (FR-13; Planned: Gemini SDK)"]
-        PIIFilter["Zero-Leakage PII Scrubber (FR-14, Planned)"]
-        GeminiAPI["Google Gemini LLM API (External Provider, Planned)"]
+    subgraph Tier3["3. AI Agent & Orchestration Tier (PA3, inside the MCP process)"]
+        Agent["Agent Orchestrator (FR-13; Gemini over REST, FakeProvider for tests)"]
+        PIIFilter["Zero-Leakage PII Scrubber + redacted outbound log (FR-14)"]
+        GeminiAPI["Google Gemini LLM API (External Provider)"]
         Agent --> PIIFilter
         PIIFilter --> GeminiAPI
     end
@@ -206,7 +212,7 @@ The system distinguishes between technologies actively implemented and executed 
 | **Connector Resilience** | In-Memory Cache & Circuit Breaker | Native TypeScript | **Implemented (Phase 2)** | Seeded synthetic mock generators (Mulberry32 PRNG), `InMemoryCacheStore`, 3-state circuit breaker, and stale-if-error fallback executor (FR-03–06, FR-09–12). |
 | **Testing & Verification** | Vitest | Vitest 5.1.0 | **Implemented (Phase 2)** | Offline/mock unit and integration testing suite (146 tests, 10 files in PA2; 230 tests, 20 files on `dev` at `6cc1d07`) for air-gapped CI/CD compliance (NFR-08). |
 | **Presentation UI** | Next.js (App Router), React, CSS Modules | Next.js 16.4.6, React 19.3.1 | **Implemented (Phase 3)** | Dashboard with three cards, mock-SSO login/sign-out and the SSE chat stream client (FR-15, FR-17, FR-18). The chat screen is planned (Y-07). Tailwind CSS was dropped in favour of CSS Modules (fewer dependencies; team decision, 19 Nov 2026). |
-| **AI / LLM Integration** | Google Gemini API, Google Gen AI SDK | Gemini 1.5 Flash / 2.0 | **Planned (Phase 3)** | Autonomous multi-tool reasoning, function calling, contextual synthesis, and prompt PII scrubber (FR-13, FR-14; Phase 2 provides `IAgentOrchestrator` skeleton). |
+| **AI / LLM Integration** | Google Gemini REST API (`generateContent`) through `fetch`; no SDK | Default model `gemini-3.5-flash-lite` (`GEMINI_MODEL`); model availability depends on the account | **Implemented (PA3)**: agent core on `dev` (PR #29); stream endpoint and Gemini 3 fix in open PRs #34, #35; not yet run end to end | Multi-tool function calling, contextual synthesis, prompt PII scrubber (FR-13, FR-14). On 21 Nov 2026 `gemini-2.0-flash`, `gemini-2.5-flash` and `gemini-2.5-flash-lite` answered 404 for the team key, so the model name must be re-checked before the demo. |
 | **Centralized Caching** | Redis | Redis 7.2 (Alpine) | **Planned (Phase 3)** | Shared multi-instance TTL cache (replacing `InMemoryCacheStore`) and distributed atomic sliding-window rate limiting (replacing `InMemoryRateLimiterStore`) (FR-08–11). |
 | **Gateway Production Plugins** | `@fastify/jwt`, `@fastify/rate-limit`, `@fastify/http-proxy` | Latest Fastify 4.x Plugins | **Planned (Phase 3)** | Ecosystem plugins for production JWT verification, reverse proxy routing to MCP server, and Redis cluster rate limiting. |
 | **Persistence & Telemetry** | PostgreSQL, Prisma ORM | PostgreSQL 16, Prisma 5.x | **Planned (Phase 3)** | Cryptographically hashed student audit records, tool execution latency telemetry, and error logging (FR-20). |
@@ -274,11 +280,11 @@ flowchart LR
 
     connectors --> shared
     mcp --> shared
-    mcp -. "Phase 3 runtime hook:<br/>registerConnectorHandlers" .-> connectors
+    mcp -- "createConnectorRuntime +<br/>registerConnectorHandlers (M-02)" --> connectors
     gateway --> shared
     web --> shared
     web -. "HTTP /api/v1 via Next.js rewrite (PA3)" .-> gateway
-    gateway -. "HTTP /mcp (planned)" .-> mcp
+    gateway -- "HTTP /mcp, /internal/agent/stream" --> mcp
 ```
 
 - Solid lines indicate compile-time TypeScript package dependencies.
@@ -330,21 +336,29 @@ The core middleware server coordinates tool discovery, validation, dispatching, 
    - *Handler Lookup:* Returns a structured `NOT_IMPLEMENTED` error if no handler is attached.
    - *Execution:* Invokes the handler and wraps output in an `MCPToolResponse` envelope.
 3. **Dual Transport Layers (`src/server.ts`, `src/index.ts`):**
-   - *HTTP Transport (Legacy HTTP+SSE & Custom JSON-RPC Endpoint):* In Phase 2, HTTP connectivity is implemented using `@modelcontextprotocol/sdk`'s `SSEServerTransport` (the legacy MCP HTTP-with-SSE protocol exposing `GET /mcp` for SSE stream initialization and `POST /mcp/messages` for incoming messages) alongside a custom JSON-RPC 2.0 `POST /mcp` endpoint for direct gateway invocations with `X-Authenticated-*` perimeter identity extraction, and `GET /health` for service heartbeat. The current codebase does not implement the newly standardized official MCP Streamable HTTP transport; integration of true MCP Streamable HTTP transport is planned for Phase 3.
+   - *HTTP Transport (Legacy HTTP+SSE & Custom JSON-RPC Endpoint):* HTTP connectivity uses `@modelcontextprotocol/sdk`'s `SSEServerTransport` (the legacy MCP HTTP-with-SSE protocol: `GET /sse` or `GET /mcp` opens the stream, the client then posts to the `POST /mcp/messages?sessionId=…` endpoint announced in the first event) alongside a custom JSON-RPC 2.0 `POST /mcp` endpoint for the gateway with `X-Authenticated-*` identity extraction, `GET /health` (including `agent.provider`) and the agent stream endpoint (item 6). The SDK announces its own session id, so sessions are keyed by `transport.sessionId`; the MCP Inspector check (M-09) found that an earlier version keyed them by a random id and answered 404 on every message (fixed in an open PR). One `Server` object serves all SSE sessions, so several simultaneous SSE clients are not supported; the gateway does not use SSE. The official MCP Streamable HTTP transport is not implemented and not claimed.
    - *Stdio Transport:* Implemented via `@modelcontextprotocol/sdk`'s `StdioServerTransport` for CLI-based clients (such as Claude Desktop or the MCP Inspector CLI), strictly routing diagnostic logs to `stderr` and reserving `stdout` exclusively for clean JSON-RPC messaging.
-4. **Temporary Sample Mock Handlers (`src/mocks/sampleMockHandlers.ts`):** Provides deterministic Phase 2 data fixtures for end-to-end verification. `sampleCafeteriaHandler` separates weekdays (nutritional menu) from weekends (`available: false`); `sampleLibraryHandler` flags responses with `isSimulated: true`. The source file explicitly documents that these are temporary mock fixtures to be superseded in Phase 3 by `packages/connectors` and Redis caching (FR-09, FR-10, FR-11).
-5. **AI Agent Orchestrator Skeleton (`src/agent/AgentOrchestrator.ts`):** Establishes the `IAgentOrchestrator` contract and plan structures (`AgentPlanStep`, `AgentTelemetryBadge`, `AgentSynthesisResult`). Its `executePlan` method honestly throws `NOT_IMPLEMENTED`, documenting the Phase 3 roadmap for Google Gemini API integration.
+4. **Connector Runtime behind the Tools (`src/server.ts`, M-02):** `createCampusMcpServer` builds `createConnectorRuntime()` from `packages/connectors` (mock or live mode per connector, TTL cache, stale-if-error, circuit breaker) and registers its handlers on the dispatcher. The Phase 2 sample handlers (`src/mocks/sampleMockHandlers.ts`) remain only as an opt-in test fixture (`registerSampleMocks`). Tool results carry `isSimulated`, `isStale`, `source`, `timestamp` and `durationMs` in the JSON block (API Contract v1.1 §3.2). The cache is in-memory in the MCP process until the Redis runtime of the connector tier (Arda, PR #31) is merged.
+5. **AI Agent Orchestrator (`src/agent/`, M-04..M-07):**
+   - *Loop (`AgentOrchestrator.run`):* an `AsyncGenerator<AgentEvent>`. The provider asks for tools; each requested call is validated and executed through the `ToolDispatcher` **in the same process** (not as an HTTP `tools/call`) with the gateway-verified `AuthContext`; results go back to the provider; the provider writes the answer. At most 4 provider rounds, the last one offers no tools. Calls requested in one round run in the order the model gives them, not concurrently.
+   - *Identity boundary:* the tool declarations offered to the model contain no `studentId`; identity-like arguments (`studentId`, `userId`, `email`, `name`) a model might add are stripped; the student comes only from the verified header. Each tool is executed at most once per run (a repeated request is refused and produces no `tool` event).
+   - *Provider boundary (`LlmProvider`):* `GeminiProvider` calls the Gemini REST API with `fetch`; the API key is sent only in the `x-goog-api-key` header. Gemini 3 models attach a `thoughtSignature` to function calls, which is kept on `LlmFunctionCall` and sent back unchanged (otherwise HTTP 400). Transient 429/500/502/503/504 answers are retried twice (500 ms, 1000 ms) inside one overall timeout (15 s default). **Both are in PR #35, which is open; on `dev` the signature is still dropped, so a tool round against a Gemini 3 model fails there.** `FakeProvider` is a deterministic test double and is marked `isFake` in every log entry.
+   - *PII (FR-14):* the question and every tool result are scrubbed; the serialized request is checked again (`assertNoPii`) and the run fails closed if an identifier remains. Tool output keeps `isSimulated` and `isStale`, and the system instruction asks the model to say so.
+   - *Outbound log (AC-04.7):* every provider request is recorded after scrubbing (console; additionally a file when `AGENT_OUTBOUND_LOG_FILE` is set). Credentials are never part of a request body.
+   - *Errors:* a provider or tool problem ends the run with one `error` event carrying a fixed safe message; details go only to the server log. The answer is produced first and then split into `token` chunks of about three words, so streaming is of the finished answer, not of the provider.
+6. **Agent Stream Endpoint (`src/agent/agentStreamHandler.ts`, M-08, PR #34 open):** `POST /internal/agent/stream` with body `{"message": "…"}` (1–1000 characters, no other key) and identity from `X-Authenticated-Student-Id` / `X-Authenticated-User-Role` (API Contract v1.1 §3.3, §8 Q4). Before the stream: `400 INVALID_PARAMS` for a bad body, `503 AGENT_UNAVAILABLE` when no `GEMINI_API_KEY` is set (the endpoint never falls back to the fake provider), both as JSON in the §3.4 shape. Then `200 text/event-stream; charset=utf-8` with `Cache-Control: no-cache` and the frames `tool` (once per executed tool), `token`, one `done`, or one `error`; a failure after the headers is an `error` event. If the client closes the connection, the provider call is cancelled with an `AbortSignal`. The endpoint does not authenticate; the gateway does, and the port is internal only.
+7. **Known limitation (open gap):** the JSON block of a tool result uses `"type":"json"`, which is not a standard MCP content type. The gateway and API Contract §4 rely on it, but a standard MCP client such as the MCP Inspector rejects `tools/call` results (`tools/list` works). A backward-compatible `text` block is planned after the demo.
 
 ##### Implementation Status (Murat)
 
-| Subsystem | FR / NFR | Phase 2 Skeleton Status (**Implemented**) | Phase 3 Core Development Status (**Planned**) |
+| Subsystem | FR / NFR | Phase 2 Skeleton Status | PA3 Status (21 Nov 2026) |
 | :--- | :--- | :--- | :--- |
 | **MCP Tool Registry** | FR-01 | **Implemented:** Strict JSON & Zod schemas with `additionalProperties: false`. | Schema discovery via live frontend widgets. |
-| **Transports (HTTP & Stdio)** | FR-02 | **Implemented:** `StdioServerTransport`, `SSEServerTransport` (legacy HTTP+SSE), custom `POST /mcp`, `/health` endpoint. | True MCP Streamable HTTP transport integration & TLS termination. |
-| **Tool Dispatcher** | FR-01, FR-06 | **Implemented:** Pipeline, `-32602` error handling, auth guard. | Connection to official `packages/connectors`. |
-| **Sample Mocks** | FR-03–06 | **Implemented:** Deterministic mock handlers in `apps/mcp-server`. | Replaced by Arda's connector package. |
-| **AI Agent Orchestrator** | FR-13 | **Implemented:** TypeScript interfaces, skeleton class. | Live Google Gemini API client integration. |
-| **Prompt PII Scrubber** | FR-14 | **Planned:** Architectural boundary defined. | Regex pipeline sanitizing names, IDs, and emails. |
+| **Transports (HTTP & Stdio)** | FR-02 | **Implemented:** `StdioServerTransport`, `SSEServerTransport` (legacy HTTP+SSE), custom `POST /mcp`, `/health` endpoint. | **Partial:** stdio, `POST /mcp` and `tools/list` over SSE verified with the MCP Inspector; SSE session fix in an open PR; `tools/call` through standard MCP clients is an open gap; Streamable HTTP not implemented. |
+| **Tool Dispatcher** | FR-01, FR-06 | **Implemented:** Pipeline, `-32602` error handling, auth guard. | **Implemented:** connected to `packages/connectors` (M-02, PR #26). |
+| **Sample Mocks** | FR-03–06 | **Implemented:** Deterministic mock handlers in `apps/mcp-server`. | **Superseded** by Arda's connector package (M-02); kept as an opt-in test fixture only. |
+| **AI Agent Orchestrator** | FR-13 | **Implemented:** TypeScript interfaces, skeleton class. | **Partial:** loop, `GeminiProvider` and `FakeProvider` merged (PR #29); stream endpoint (PR #34) and Gemini 3 fix (PR #35) open; run against real Gemini only directly, not through the stream endpoint. |
+| **Prompt PII Scrubber** | FR-14 | **Planned:** Architectural boundary defined. | **Implemented** (PR #29): scrubbing, fail-closed check and redacted outbound log. |
 
 ---
 
@@ -640,17 +654,18 @@ export class ToolDispatcher {
 }
 
 // apps/mcp-server/src/agent/AgentOrchestrator.ts
-export interface AgentPlanStep {
-  toolName: string;
-  parameters: Record<string, unknown>;
-  reasoning?: string;
-}
-
 export interface AgentTelemetryBadge {
   toolName: string;
   status: 'CACHE_HIT' | 'LIVE' | 'STALE' | 'ERROR';
   durationMs: number;
 }
+
+// Maps 1:1 to the SSE frames of API Contract v1.1 §3.3
+export type AgentEvent =
+  | ({ type: 'tool' } & AgentTelemetryBadge)            // once per executed tool
+  | { type: 'token'; text: string }                      // chunk of the answer
+  | { type: 'done'; answer: string; toolsInvoked: string[]; isComplete: true }
+  | { type: 'error'; code: 'AGENT_ERROR'; message: string };
 
 export interface AgentSynthesisResult {
   text: string;
@@ -663,11 +678,51 @@ export interface IAgentOrchestrator {
   executePlan(query: string, auth: AuthContext): Promise<AgentSynthesisResult>;
 }
 
-export class AgentOrchestrator implements IAgentOrchestrator {
-  constructor(dispatcher: ToolDispatcher);
-  public getDispatcher(): ToolDispatcher;
-  public async executePlan(query: string, auth: AuthContext): Promise<AgentSynthesisResult>;
+export interface AgentOrchestratorOptions {
+  provider?: LlmProvider;      // none: run() throws NOT_IMPLEMENTED, never a fake
+  outboundLog?: OutboundLog;   // redacted record of every provider request
+  maxRounds?: number;          // default 4; the last round offers no tools
+  nowMs?: () => number;
+  tokenChunkWords?: number;    // default 3
 }
+
+export interface AgentRunOptions {
+  pii?: Pick<PiiContext, 'name' | 'email' | 'extraTerms'>;
+  signal?: AbortSignal;        // cancels the provider call
+}
+
+export class AgentOrchestrator implements IAgentOrchestrator {
+  constructor(dispatcher: ToolDispatcher, options?: AgentOrchestratorOptions);
+  public getDispatcher(): ToolDispatcher;
+  public getProviderName(): string | undefined;
+  public run(query: string, auth: AuthContext, options?: AgentRunOptions): AsyncGenerator<AgentEvent>;
+  public executePlan(query: string, auth: AuthContext): Promise<AgentSynthesisResult>;
+}
+
+// apps/mcp-server/src/agent/LlmProvider.ts
+export interface LlmFunctionCall {
+  name: string;
+  args: Record<string, unknown>;
+  thoughtSignature?: string;   // Gemini 3: must be sent back unchanged (PR #35)
+}
+
+export interface LlmProvider {
+  readonly name: string;       // e.g. "gemini", "fake"
+  readonly isFake: boolean;    // written to the outbound log
+  generate(request: LlmRequest, signal?: AbortSignal): Promise<LlmResponse>;
+}
+
+// apps/mcp-server/src/agent/GeminiProvider.ts
+export function createGeminiProviderFromEnv(env?: Record<string, string | undefined>): GeminiProvider | undefined;
+// returns undefined without a usable GEMINI_API_KEY; callers never substitute a fake
+
+// apps/mcp-server/src/agent/agentStreamHandler.ts (PR #34, open)
+export interface AgentStreamHandlerOptions {
+  dispatcher: ToolDispatcher;
+  provider?: LlmProvider;      // undefined: the endpoint answers 503 AGENT_UNAVAILABLE
+  outboundLog?: OutboundLog;
+}
+export function createAgentStreamHandler(options: AgentStreamHandlerOptions): AgentStreamHandler;
 ```
 
 ---
@@ -1120,16 +1175,19 @@ sequenceDiagram
   2. Router detects conjunctions (`sonra`, commas) and multiple domains, returning `LLM_AGENT`.
   3. Client sends `POST /api/v1/chat/stream` with the query and the JWT (`Authorization: Bearer`) to its own origin; the Next.js server rewrites it to the Gateway. The browser reads the SSE response from the `fetch()` response stream (an `EventSource` cannot send a POST body or an `Authorization` header).
   4. Gateway validates token, strips raw credentials, and creates trusted `AuthContext`.
-  5. Gateway forwards query and context to AI Agent.
-  6. Agent scrubs PII (FR-14) and formulates multi-tool execution plan.
-  7. Agent invokes `get_course_schedule` via MCP Server (using verified `AuthContext`; `studentId` is not an argument).
-  8. Agent concurrently invokes `get_shuttle_schedule` and `get_cafeteria_menu`.
-  9. Agent synthesizes unified response matching class end time against shuttle departures and menu.
-  10. UI streams response tokens over SSE, appending three telemetry badges.
+  5. Gateway forwards `{"message": "…"}` and the verified identity headers (`X-Authenticated-Student-Id`, `X-Authenticated-User-Role`) to `POST /internal/agent/stream` of the MCP process (`AGENT_STREAM_URL`, API Contract v1.1 §8 Q4). The agent runs inside that process.
+  6. Agent scrubs PII (FR-14), checks the request again (fail closed), records it in the redacted outbound log and sends the question with the four tool declarations (no `studentId`) to Gemini.
+  7. Gemini asks for tools. The agent executes each requested tool at most once through the `ToolDispatcher` **in-process**, in the order requested, with the verified `AuthContext` (`studentId` is never an argument), and emits one `tool` event per execution.
+  8. The scrubbed tool results, with `isSimulated` and `isStale`, go back to Gemini in the next round.
+  9. Gemini writes the answer; the agent emits `token` chunks and exactly one `done` event.
+  10. Gateway passes the frames through unchanged; the UI appends the tool badges and the streamed text.
 - **Alternative / Error Flows:**
   - *Expired Token:* Gateway rejects with HTTP 401; UI prompts login while keeping draft text.
   - *Slow LLM Response (> 5s):* UI displays "Still processing..." notice when no answer text has arrived after 5 s; the request is cancelled with a retry option after **20 s without any data** (idle timeout), so a long answer that keeps streaming is not cut off.
   - *SSE Connection Drop (design decision revised in PA3):* the partial answer and the typed draft are kept, the turn ends with `STREAM_INTERRUPTED`, and the user retries explicitly with "Tekrar dene" (retry). There is **no automatic reconnect or resend**, because without server-side replay a reconnect would run the tool chain a second time (API Contract v1.1 §3.3). This replaces the PA2 rule "automatic retry with backoff (1s, 2s, 4s)" (FR-19).
+  - *Agent not configured (no `GEMINI_API_KEY`) (PA3):* the agent endpoint answers `503` JSON before any stream starts; the gateway maps it to its own `503 UPSTREAM_UNAVAILABLE` and the UI shows an error with a retry option. The system never answers with fake data in this case.
+  - *Provider failure after the stream started (PA3):* the agent emits one `error` event with a fixed safe message (no tokens, PII or stack trace) instead of `done`; the user retries explicitly. Transient provider overload (429/5xx) is retried twice inside the provider before this happens (PR #35, open).
+  - *Real-run status (PA3, honest limit):* the real Gemini provider was run directly on the agent and answered a compound question from three tool results; the full chain through gateway and UI has not been run, so AT-04 and AC-04.11 are not satisfied yet.
 
 ```mermaid
 sequenceDiagram
@@ -1138,11 +1196,9 @@ sequenceDiagram
     participant Router as routeStudentQuery
     participant NX as Next.js server (rewrite)
     participant Gateway as API Gateway
-    participant Agent as Agent + PII Scrubber
-    participant MCP as MCP Server
-    participant SIS as Course Tool
-    participant Shuttle as Shuttle Tool
-    participant Menu as Cafeteria Tool
+    participant Agent as Agent + PII Scrubber (in the MCP process)
+    participant LLM as Gemini (external)
+    participant MCP as ToolDispatcher + connectors
 
     Student->>UI: Compound inquiry (Course + Shuttle + Menu)
     UI->>Router: routeStudentQuery(query)
@@ -1150,22 +1206,19 @@ sequenceDiagram
     UI->>NX: POST /api/v1/chat/stream + JWT Authorization header
     NX->>Gateway: Rewrite to GATEWAY_URL
     Gateway->>Gateway: Verify JWT, strip token, inject AuthContext
-    Gateway->>Agent: Forward query + verified AuthContext
-    Agent->>Agent: Scrub PII & formulate tool plan
-    Agent->>MCP: tools/call get_course_schedule (no studentId arg)
-    MCP->>SIS: execute({ day: "TODAY" }, AuthContext)
-    SIS-->>Agent: Student class end times (e.g. 12:20)
-    par Public Tool Calls
-        Agent->>MCP: tools/call get_shuttle_schedule
-        MCP->>Shuttle: execute({ route: "MAIN_RING" })
-        Shuttle-->>Agent: Upcoming departures (12:35, 12:50)
-    and
-        Agent->>MCP: tools/call get_cafeteria_menu
-        MCP->>Menu: execute({ date: "2026-11-16" })
-        Menu-->>Agent: Daily menu details
+    Gateway->>Agent: POST /internal/agent/stream {message} + X-Authenticated-* headers
+    Agent->>Agent: Scrub PII, fail-closed check, redacted outbound log
+    Agent->>LLM: generateContent (question + tool declarations, no studentId)
+    LLM-->>Agent: function call(s)
+    loop each requested tool, at most once
+        Agent->>MCP: dispatch(tool, args, AuthContext) in-process
+        MCP-->>Agent: result + isSimulated/isStale/source/durationMs
+        Agent-->>Gateway: event: tool
     end
-    Agent-->>Gateway: Streamed synthesis + execution telemetry
-    Gateway-->>NX: SSE frames (tool, token, done | error)
+    Agent->>LLM: generateContent (scrubbed tool results)
+    LLM-->>Agent: answer text
+    Agent-->>Gateway: event: token (chunks), event: done
+    Gateway-->>NX: SSE frames (tool, token, done | error) unchanged
     NX-->>UI: SSE stream read via fetch()
     UI-->>Student: Render synthesized answer + 3 tool badges
 ```
@@ -1268,8 +1321,8 @@ In compliance with the BIL 481 Project Assignment 2 guidelines, all design decis
   - Tool Registry & Schemas: [`apps/mcp-server/src/registry/toolDefinitions.ts`](../apps/mcp-server/src/registry/toolDefinitions.ts)
   - Tool Dispatcher Engine: [`apps/mcp-server/src/dispatcher/ToolDispatcher.ts`](../apps/mcp-server/src/dispatcher/ToolDispatcher.ts)
   - Server & SSE Handlers: [`apps/mcp-server/src/server.ts`](../apps/mcp-server/src/server.ts)
-  - AI Agent Orchestrator Skeleton: [`apps/mcp-server/src/agent/AgentOrchestrator.ts`](../apps/mcp-server/src/agent/AgentOrchestrator.ts)
-  - Temporary Sample Mocks: [`apps/mcp-server/src/mocks/sampleMockHandlers.ts`](../apps/mcp-server/src/mocks/sampleMockHandlers.ts)
+  - AI Agent: [`apps/mcp-server/src/agent/`](../apps/mcp-server/src/agent/) — [`AgentOrchestrator.ts`](../apps/mcp-server/src/agent/AgentOrchestrator.ts), [`LlmProvider.ts`](../apps/mcp-server/src/agent/LlmProvider.ts), [`GeminiProvider.ts`](../apps/mcp-server/src/agent/GeminiProvider.ts), [`FakeProvider.ts`](../apps/mcp-server/src/agent/FakeProvider.ts), [`piiScrubber.ts`](../apps/mcp-server/src/agent/piiScrubber.ts), [`outboundLog.ts`](../apps/mcp-server/src/agent/outboundLog.ts); stream endpoint `agentStreamHandler.ts` (PR #34, open)
+  - Sample Mocks (opt-in test fixture only since M-02): [`apps/mcp-server/src/mocks/sampleMockHandlers.ts`](../apps/mcp-server/src/mocks/sampleMockHandlers.ts)
 - **Web Client & Bilingual Intent Router:** [`apps/web/src/index.ts`](../apps/web/src/index.ts)
   - Deterministic Intent Router: [`apps/web/src/router/routeStudentQuery.ts`](../apps/web/src/router/routeStudentQuery.ts)
   - *(PA3)* Next.js pages: [`apps/web/src/app/`](../apps/web/src/app/); dashboard cards: [`apps/web/src/components/cards/`](../apps/web/src/components/cards/)
@@ -1299,12 +1352,12 @@ In compliance with the BIL 481 Project Assignment 2 guidelines, all design decis
 The repository contains a 100% offline-executable, zero-network test suite executed via Vitest (`npm test` / `vitest run`), validating all contracts, mock flows, intent routing, and security boundaries in compliance with NFR-08:
 - **Connector test group (`tests/connectors/`):** [`tests/connectors/`](../tests/connectors/) (76 tests passing across 7 test files, covering mock connectors, cache stores, circuit breaker state machine, config parser, and resilient executor)
 - **Web intent router (`apps/web/tests/routeStudentQuery.test.ts`):** [`apps/web/tests/routeStudentQuery.test.ts`](../apps/web/tests/routeStudentQuery.test.ts) (45 tests passing, validating bilingual normalization and deterministic routing across 40 labeled queries)
-- **MCP server (`tests/mcp-server/dispatcher.test.ts`):** [`tests/mcp-server/dispatcher.test.ts`](../tests/mcp-server/dispatcher.test.ts) (18 tests passing, verifying tool registration, strict input validation, auth guard, and sample mock flows)
+- **MCP server and agent (`tests/mcp-server/`):** [`tests/mcp-server/`](../tests/mcp-server/) (71 tests passing across 5 files on `dev` at `db57ed9`: dispatcher, HTTP connectors, agent orchestrator, Gemini provider with a stubbed `fetch`, PII scrubber). `agentStream.test.ts` (PR #34) and `sseTransport.test.ts` (open PR) are not on `dev` yet. These tests use stubs and the fake provider; they are not acceptance tests.
 - **API gateway (`apps/api-gateway/tests/jwtAuth.test.ts`):** [`apps/api-gateway/tests/jwtAuth.test.ts`](../apps/api-gateway/tests/jwtAuth.test.ts) (7 tests passing, verifying JWT verification, token stripping, header injection, and rate limiting)
 
 **Overall Test Suite Total:** **146 tests, 10 test files** (0 failures, completed in < 1s offline). *(PA2 baseline.)*
 
-**PA3 update:** `npx vitest run` on `dev` at `6cc1d07` (20 Nov 2026, run by Murat Can Işık on Windows 11, Node.js, Vitest 5.1.0): **230 tests in 20 files, all passing**; the web client accounts for 111 of them in 7 files (router incl. held-out sets, gateway client, formatting, SSE parser, chat stream client, auth).
+**PA3 update:** `npx vitest run` on `dev` at `db57ed9` (21 Nov 2026, run by Murat Can Işık on Windows 11, Node.js v24, Vitest 5.1.0): **292 tests in 25 files, all passing**; 71 of them are in `tests/mcp-server/` (5 files). (At `6cc1d07` on 20 Nov 2026 the count was 230 tests in 20 files, 111 of them web tests.)
 
 ---
 
@@ -1339,7 +1392,7 @@ The task matrix below records the individual efforts contributed exclusively tow
 | :--- | :--- | :--- | :--- | :---: | :---: | :---: |
 | **TSK-DES-12** | Web client handover for the Design Document (Y-13) | Yunus Emre Biçer | Murat Can Işık (review, PR #21) | Not recorded | Not recorded | Completed |
 | **TSK-DES-13** | Update of the web client sections 1.2, 1.3, 2.1, 2.2.2, 2.3.3, 2.4, 3.2–3.6, 5; SSE reconnect decision (M-11) | Murat Can Işık | Source: Yunus Emre Biçer; reviewer: Yunus Emre Biçer | Not recorded | Not recorded | In review |
-| **TSK-DES-14** | Update of gateway, MCP/agent and connector sections (M-11) | Murat Can Işık | Sources: Sefa, Arda handovers | Not recorded | Not recorded | Planned |
+| **TSK-DES-14** | Update of gateway, MCP/agent and connector sections (M-11) | Murat Can Işık | Sources: Murat (MCP/agent, done in Version 1.2), Sefa and Arda handovers (gateway, connectors: pending) | Not recorded | Not recorded | In progress (MCP/agent part in review; gateway and connector parts pending) |
 
 *Summary of Member Document Allocations:*
 - **Murat Can Işık:** Estimated 1.50 h | Actual: 1.00 h
