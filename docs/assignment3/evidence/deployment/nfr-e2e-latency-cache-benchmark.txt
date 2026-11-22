@@ -1,0 +1,19 @@
+========================================================================
+Campus Data Orchestrator — NFR-01 / NFR-02 E2E Benchmark (Compose)
+========================================================================
+SCOPE: Measures 20 concurrent authenticated virtual students x 25 requests
+       (500 requests total, under 30 req/60s per-student rate ceiling)
+       against live 4-service Docker Compose (`api-gateway -> mcp-server -> redis`)
+       rotating across get_cafeteria_menu, get_shuttle_schedule, get_library_occupancy.
+       Honesty note: 20-user burst benchmark (~0.87s total), not a 5-min soak.
+------------------------------------------------------------------------
+Executed At (UTC): 2026-11-22T15:41:22.963Z
+GIT_SHA:           13f71d738a895c62d8e28293e0bf47d60b01e1d5
+Total Requests:    500 (HTTP 200: 500, Errors: 0)
+Wall Time:         869.9 ms (574.8 req/s)
+LIVE Count:        3
+CACHE_HIT Count:   497
+Cache Hit Ratio:   99.4% (NFR-02 target: >= 90%) -> PASS
+Cached Latency:    min=21.52ms, p50=32.21ms, p95=44.41ms, p99=68.27ms, max=84.62ms (NFR-01 target: p95 < 250ms) -> PASS
+Overall Latency:   min=20.45ms, p50=32.19ms, p95=44.26ms, p99=67.46ms, max=84.62ms
+========================================================================

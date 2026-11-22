@@ -9,7 +9,7 @@
 | **Group Name** | Group-ASYM |
 | **QA Lead & Primary Author** | **Ahmet Sefa Efendioğlu** (241101066) — `@Sefa-Efendioglu` |
 | **Contributors to this Document** | **Ahmet Sefa Efendioğlu** (Lead Author, QA Strategy, Metrics, Test Cases, V&V Alignment, Bug Tracking), **Murat Can Işık** (MCP & Agent Test Alignment), **Yunus Emre Biçer** (Frontend, Usability & AT Test Alignment), **Arda Çelik** (Connector & Reliability Test Alignment) |
-| **Document Version / Date** | Version 1.3 (PA3 V&V + 3-Service Compose Verification), 20 November 2026 *(v1.0 PA2 baseline: 15 November 2026)* |
+| **Document Version / Date** | Version 1.4 (PA3 Full 4-Service V&V Verification, `AT-01..03` PASS & `NFR-01/02` Measured), 22 November 2026 *(v1.0 PA2 baseline: 15 November 2026)* |
 | **Repository Filepath** | `docs/QA_Plan.md` |
 | **Related Documents** | `docs/Requirements_Document.md`, `docs/Project_Plan_Document.md`, `docs/Design_Document.md`, `docs/assignment3/Acceptance_Tests_and_Criteria.md`, `docs/assignment3/Test_Results_Report.md` |
 
@@ -94,12 +94,12 @@ In line with IEEE V&V principles and Project Assignment 3, testing distinguishes
 - **Verification (*"Are we building the system right?"*):** Checks conformance to specifications, schemas, contracts, and security invariants (`FR-01`..`FR-20`, `NFR-01`..`NFR-09`, `API Contract v1.1`). Covered by automated **Unit** and **Integration/Contract** tests (`TC-01`..`TC-08` module checks).
 - **Validation (*"Did we build the right system for the student?"*):** Checks whether an end user can complete the four selected campus scenarios end-to-end across the deployed stack. Covered by **System / E2E** and **Acceptance** tests (`AT-01`..`AT-04` in `docs/assignment3/Acceptance_Tests_and_Criteria.md`, results recorded separately in `docs/assignment3/Test_Results_Report.md`).
 
-| Test Level | Scope & Purpose | Representative Tests | Current Execution Status (20 Nov 2026) |
+| Test Level | Scope & Purpose | Representative Tests | Current Execution Status (22 Nov 2026, `dev` @ `13f71d7`) |
 | :--- | :--- | :--- | :--- |
-| **Unit** | Pure logic, Zod schemas, JWT verification, intent router, circuit breaker, in-memory cache/rate limiter | `routeStudentQuery.test.ts`, `auth.test.ts`, `dispatcher.test.ts`, `jwtAuth.test.ts`, `tests/connectors/*` | **Executed / Passed** (part of 230 Vitest tests) |
-| **Integration / Contract** | Inter-tier HTTP contracts (`POST /api/v1/query`, `POST /api/v1/chat/stream`), RESP2 Redis rate limiter, `ToolDispatcher` + connectors, 3-service Compose (`web` + `api-gateway` + `redis`) | `queryProxy.test.ts`, `chatStreamProxy.test.ts`, `rateLimiter.test.ts`, `dispatcherIntegration.test.ts`, `compose-3service-smoke.txt` | **3-service Compose (`web -> gateway -> redis`), live Redis rate limiter & stub proxy checks Executed / Passed**; live Docker MCP/connector E2E **Not Run (Blocked)** |
-| **System / E2E** | Browser → Next.js → Gateway → MCP → Connector/Agent → Redis full chain | Live `TC-04`, `TC-06`, `TC-08` E2E & `--mode=smoke` | **Not Run (Blocked)** pending `M-02`..`M-08`, `M-13`, `A-02`, `Y-07` |
-| **Acceptance (Validation)** | Student-facing completion of `UC-01`..`UC-04` against measurable `AC-01.x`..`AC-04.x` criteria | `AT-01`, `AT-02`, `AT-03`, `AT-04` | **Not Run (Blocked)** — unit/stub tests never count as AT PASS |
+| **Unit** | Pure logic, Zod schemas, JWT verification, intent router, circuit breaker, in-memory cache/rate limiter, PII scrubber | `routeStudentQuery*.test.ts`, `auth.test.ts`, `dispatcher.test.ts`, `jwtAuth.test.ts`, `agentOrchestrator.test.ts`, `piiScrubber.test.ts`, `tests/connectors/*` | **Executed / Passed** (part of `366` passing tests across `33` files; `8` real-Redis tests skipped without `REDIS_TEST_URL`, passed in `PR #31`) |
+| **Integration / Contract** | Inter-tier HTTP contracts (`POST /api/v1/query`, `POST /api/v1/chat/stream`), RESP2 Redis rate limiter, `ToolDispatcher` + connectors, 4-service Compose (`web` + `api-gateway` + `mcp-server` + `redis`) | `queryProxy.test.ts`, `chatStreamProxy.test.ts`, `rateLimiter.test.ts`, `httpConnectors.test.ts`, `compose-4service-egress-smoke.txt`, `nfr-e2e-latency-cache-benchmark.txt` | **Executed / Passed** (`4/4` healthy services, `S-06` isolation, Redis `cache:*` & rate limit `429`, `NFR-01` cached P95 `44.41 ms`, `NFR-02` `99.4%` hit ratio) |
+| **System / E2E** | Browser → Next.js → Gateway → MCP → Connector/Agent → Redis full chain | Chrome CDP `AT-01..03` + `AT-04` security/UI checks (`sefa-security-checks.txt`); supporting Gemini curl (`PR #45`) | **Core & Security Executed / Passed**; real Gemini browser chat stream blocked locally only by missing `.env` `GEMINI_API_KEY` |
+| **Acceptance (Validation)** | Student-facing completion of `UC-01`..`UC-04` against measurable `AC-01.x`..`AC-04.x` criteria | `AT-01`, `AT-02`, `AT-03`, `AT-04` (`docs/assignment3/Test_Results_Report.md` v0.9) | **`AT-01..AT-03 PASS` (`3/4`)**; **`AT-04 BLOCKED` (`1/4`)** awaiting local `GEMINI_API_KEY` for Steps 4–7 |
 
 The project employs a layered testing pyramid designed to validate functionality from isolated units to integrated multi-tier workflows:
 
@@ -320,8 +320,8 @@ flowchart LR
   - Case 1 halts immediately with JSON-RPC authorization error: `"Authentication required"`.
   - Case 2 fails JSON Schema validation (`studentId` parameter is disallowed in client payload to prevent spoofing).
   - Case 3 succeeds, returning enrolled course list sorted chronologically by `startTime`.
-- **Actual Result (Phase 2):** Not executed end-to-end — pending Gateway-to-MCP HTTP transport wiring in Phase 3 (Note: MCP `ToolDispatcher` unit verification of all 3 assertions is **Passed** in `tests/mcp-server/dispatcher.test.ts`).
-- **Status:** **Planned / Not Run**
+- **Actual Result (Phase 2 / PA3 Final):** **Pass (Unit + Full 4-Service Compose Verified).** Phase 2 `ToolDispatcher` unit assertions passed (`tests/mcp-server/dispatcher.test.ts`), and PA3 4-service Docker Compose execution (`AT-04` Step 1, Step 8, `compose-4service-egress-smoke.txt`) confirmed guest `401 AUTHENTICATION_REQUIRED`, `studentId` injection `400 INVALID_PARAMS`, forged `X-Authenticated-Student-Id` header stripping, and authenticated student timetable retrieval.
+- **Status:** **Pass**
 
 ---
 
@@ -359,11 +359,11 @@ flowchart LR
   4. Issue 3 consecutive failing requests: verify circuit breaker state transition to `OPEN`.
   5. Issue 4th request while circuit is `OPEN`.
 - **Expected Result:**
-  - Step 3 returns cached data in `< 50 ms` with `"isStale": true` and original timestamp.
+  - Step 3 returns cached data within `≤ 850 ms` (`≤ 800 ms UPSTREAM_TIMEOUT_MS` cutoff + `50 ms` cache/serialization overhead on hanging upstream; or `< 50 ms` on fast-fail placeholder) with `"isStale": true` and original cache timestamp *(updated per `handovers/arda.md` §5)*.
   - Step 4 trips circuit breaker after 3 failures.
-  - Step 5 returns immediate fallback response with 0 network attempts to upstream.
-- **Actual Result (Phase 2):** Not executed against live Redis container — pending Docker Redis integration in Phase 3 (Note: in-memory `CacheStore`, stale-if-error fallback, and 3-state `CircuitBreaker` fault-injection unit and integration assertions are **Passed** across 76 tests in `tests/connectors/resilientExecutor.test.ts`, `tests/connectors/circuitBreaker.test.ts`, and `tests/connectors/`).
-- **Status:** **Planned / Not Run**
+  - Step 5 returns immediate fallback response in `< 50 ms` (measured `~1 ms` in connector tests) with 0 network attempts to upstream.
+- **Actual Result (Phase 2 / PA3 Verification):** **Pass (Fault-Injection Suites + Live 4-Service Redis Stale Fallback Verified).** All `ResilientConnectorExecutor` and 3-state `CircuitBreaker` assertions pass in `tests/connectors/` (`~800 ms` timeout fallback, `~1 ms` open circuit). Furthermore, live 4-service Docker Compose (`AT-03` Step 7, `LIBRARY_CONNECTOR_MODE=live` at `+83.4 s` wall time after TTL expiry within `3 × TTL` retention) served HTTP `200` `meta.source = "STALE"`, `isStale = true`, original timestamp, and logged `"outcome":"STALE"` (`docs/assignment3/evidence/AT-03/network-and-logs.txt`).
+- **Status:** **Pass**
 
 ---
 
@@ -382,8 +382,8 @@ flowchart LR
 - **Expected Result:**
   - Steps 1, 2, and 3 are rejected at perimeter with HTTP `401 Unauthorized`.
   - Step 4 succeeds: Gateway strips raw `Authorization: Bearer <JWT>` header, discards any client-supplied `X-Authenticated-*` headers, and injects verified internal headers: `X-Authenticated-Student-Id: 241101066` and `X-Authenticated-User-Role: STUDENT`. Downstream server receives 0 raw JWT tokens.
-- **Actual Result (Phase 2 / PA3 Gateway Update):** **Unit, Gateway Stub-Proxy & Live Containerized Redis Rate Limiter Passed / Full Multi-Service E2E Not Run (Blocked).** Gateway JWT verification, `alg=none`/tampered/expired rejection, header anti-spoofing, token termination, Redis RESP2 sliding-window rate limiter, and `POST /api/v1/query` + `POST /api/v1/chat/stream` proxy behavior pass across **25 tests** in `apps/api-gateway/tests/` (`jwtAuth.test.ts`, `queryProxy.test.ts`, `chatStreamProxy.test.ts`, `rateLimiter.test.ts`, `deploymentConfig.test.ts`). Additionally, live containerized `campus-api-gateway:local` + `redis:7-alpine` smoke verification (`2026-11-20T10:11:05Z`) proved real `RATE_LIMITED` (`429` on 31st request, `ZCARD=30`) and `--internal` network isolation (`docs/assignment3/evidence/deployment/gateway-docker-redis-smoke.txt`). Live 4-service E2E remains **Not Run (Blocked)** pending MCP connector/agent and web integration.
-- **Status:** **Gateway + Live Redis Pass (Full 4-Service E2E Not Run — Blocked)**
+- **Actual Result (Phase 2 / PA3 Verification):** **Pass (Unit/Contract + Full 4-Service Compose & Chrome E2E Verified).** Gateway JWT verification, `alg=none`/tampered/expired rejection, header anti-spoofing, token termination, Redis RESP2 sliding-window rate limiter, and proxy behavior pass across **25 tests** in `apps/api-gateway/tests/`. Live 4-service Compose verification (`compose-4service-egress-smoke.txt`, `AT-04` Steps 8 & 9 in `sefa-security-checks.txt`) proved `30 x 200` / 31st `429 RATE_LIMITED` (`ZCARD=30`), expired & tampered JWT `401` (`0` MCP calls), forged header stripping, and blocked host/web access to `mcp-server:3001` & `redis:6379`.
+- **Status:** **Pass**
 
 ---
 
@@ -402,8 +402,8 @@ flowchart LR
   - Outbound prompt intercepted at the network boundary contains `<STUDENT_ID>` and `<STUDENT_NAME>` placeholders; 0 cleartext occurrences of "Ahmet Sefa Efendioğlu" or "241101066".
   - Agent plans and invokes tools in sequence: `get_course_schedule` → `get_shuttle_schedule` → `get_cafeteria_menu`.
   - Final response correlates course end time (e.g., 12:20) with next shuttle departure (e.g., 12:35) and summarizes lunch menu.
-- **Actual Result (Phase 2):** Not executed — pending implementation (Gemini API integration scheduled for Phase 3).
-- **Status:** **Planned / Not Run**
+- **Actual Result (Phase 2 / PA3 Update):** **Unit/Stub & Supporting Curl Passed / Formal QA Browser E2E Blocked (Missing Local `GEMINI_API_KEY`).** `AgentOrchestrator`, `GeminiProvider`, and fail-closed `PiiScrubber` suites pass (`tests/mcp-server/`). On `dev` @ `b0cc12d` (`PR #45`), Murat's clean 4-service Compose curl run (`gateway-agent-gemini-compose-smoke.txt` v2) invoked `get_course_schedule`, `get_shuttle_schedule`, and `get_cafeteria_menu` via real Gemini with `0` student ID, raw JWT, or API key leaks. Formal QA browser E2E (`AT-04` Steps 4–7) awaits `GEMINI_API_KEY` in local `.env`.
+- **Status:** **Unit/Stub & Supporting Curl Pass (Browser E2E Blocked — Missing Local Key)**
 
 ---
 
@@ -493,19 +493,20 @@ The table below maps each of the 4 defined Quality Factors and the 8 Core Test C
 
 | Verification Item | Target Subsystem | Linked Requirement(s) | Linked Use Case | Linked AT (A3) | Verification Method | Current Status / Milestone |
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: |
-| **QF-1: Performance** | MCP Server & Gateway | NFR-01 | All UCs | `AT-01`..`AT-04` | Measurement (M) | Not Measured (Pending Compose E2E) |
-| **QF-2: Reliability** | Redis Cache & Circuit Breaker | NFR-03, FR-10, FR-11 | UC-01, UC-02 | `AT-01`..`AT-03` | Test (T) | In-Memory Pass; Live Redis Blocked |
-| **QF-3: Security** | Fastify Gateway & PII Filter | NFR-05, FR-07, FR-14 | UC-04 | `AT-04` | Test (T), Inspection (I) | Gateway Unit/Contract Pass; Agent PII Blocked |
-| **QF-4: Usability** | Next.js Dual-View Client | NFR-06, FR-18 | UC-01 to UC-04 | `AT-01`..`AT-04` | Demonstration (D), Survey | Not Evaluated (Pending UI Integration) |
-| **TC-01** | Dining Connector & Tool | FR-01, FR-03 | UC-01 | `AT-01` | Unit / Integration (T) | Module Pass; E2E Blocked (`M-02`) |
-| **TC-02** | Shuttle Connector & Tool | FR-01, FR-04 | UC-02 | `AT-02` | Unit / Integration (T) | Module Pass; E2E Blocked (`M-02`) |
-| **TC-03** | Library Connector & Tool | FR-01, FR-05, FR-12 | UC-03 | `AT-03` | Unit / Integration (T) | Module Pass; E2E Blocked (`M-02`) |
-| **TC-04** | Schedule Tool Auth Context | FR-06, FR-07 | UC-04 | `AT-04` | Security Integration (T) | Unit/Proxy Pass; E2E Blocked (`M-02`, `M-13`) |
-| **TC-05** | Bilingual Intent Router | FR-16 | UC-01 to UC-04 | `AT-01`..`AT-04` | Unit Benchmark (T) | Passed (router tests + held-out/val) |
-| **TC-06** | Stale Cache & Circuit Breaker | FR-09, FR-10, FR-11 | UC-01, UC-02 | `AT-01`..`AT-03` | Fault Injection (T) | In-Memory Pass; Live Redis Blocked (`A-02`) |
-| **TC-07** | Gateway JWT & Token Stripping | FR-07, FR-08, NFR-05 | UC-04 | `AT-04` | Security Unit/Contract + Container Smoke (T, I) | Gateway Unit/Contract (25) + Live Redis Container Smoke Pass; Full E2E Blocked |
-| **TC-08** | AI Multi-Tool & PII Scrubbing | FR-13, FR-14 | UC-04 | `AT-04` | Integration / E2E (T, D) | Not Run / Blocked (`M-04`..`M-08`) |
-| **AT-01..AT-04** | Acceptance Tests for UC-01..UC-04 | FR-01..19 (selected) | UC-01..UC-04 | `TC-01`..`TC-08` (supporting) | System / Acceptance (Validation) | **Not Run (Blocked)** — see `Test_Results_Report.md` |
+| **QF-1: Performance** | MCP Server & Gateway | NFR-01 | All UCs | `AT-01`..`AT-04` | Measurement (M) | **Pass (Burst Benchmark)** — `44.41 ms` cached P95 (`500` reqs, `nfr-e2e-latency-cache-benchmark.txt`) |
+| **QF-2: Reliability** | Redis Cache & Circuit Breaker | NFR-03, FR-10, FR-11 | UC-01..UC-03 | `AT-01`..`AT-03` | Test (T) | **Pass** — Unit/Redis + live `AT-03` Step 7 `STALE` fallback verified |
+| **QF-3: Security** | Fastify Gateway & PII Filter | NFR-05, FR-07, FR-14 | UC-04 | `AT-04` | Test (T), Inspection (I) | **Gateway Pass; Agent PII Unit + PR #45 Curl Verified** (`AT-04` browser pending key) |
+| **QF-4: Usability** | Next.js Dual-View Client | NFR-06, NFR-07, FR-18 | UC-01 to UC-04 | `AT-01`..`AT-04` | Demonstration (D), Inspection | **Mobile/Guest Layout Pass (`AT-01` 375 px); 5-User SUS Not Evaluated** |
+| **TC-01** | Dining Connector & Tool | FR-01, FR-03 | UC-01 | `AT-01` | Unit / Integration / Chrome E2E (T) | **Pass** (Vitest + Live `AT-01`) |
+| **TC-02** | Shuttle Connector & Tool | FR-01, FR-04 | UC-02 | `AT-02` | Unit / Integration / Chrome E2E (T) | **Pass** (Vitest + Live `AT-02` incl. 22:30 empty state) |
+| **TC-03** | Library Connector & Tool | FR-01, FR-05, FR-12 | UC-03 | `AT-03` | Unit / Integration / Chrome E2E (T) | **Pass** (Vitest + Live `AT-03`) |
+| **TC-04** | Schedule Tool Auth Context | FR-06, FR-07 | UC-04 | `AT-04` | Security Integration / E2E (T) | **Pass** (Vitest + 4-Service Compose `AT-04` Steps 1, 8) |
+| **TC-05** | Bilingual Intent Router | FR-16 | UC-01 to UC-04 | `AT-01`..`AT-04` | Unit Benchmark / Chrome E2E (T) | **Pass** (`routeStudentQuery*.test.ts` + Live `AT-01..04`) |
+| **TC-06** | Stale Cache & Circuit Breaker | FR-09, FR-10, FR-11 | UC-01..UC-03 | `AT-01`..`AT-03` | Fault Injection / E2E (T) | **Pass** (Unit/Redis `7/7` + Live `AT-03` Step 7 `STALE`) |
+| **TC-07** | Gateway JWT & Token Stripping | FR-07, FR-08, NFR-05 | UC-04 | `AT-04` | Security Unit/Contract + 4-Service Compose (T, I) | **Pass** (`25` gateway tests + `AT-04` Steps 8, 9 + `429` Redis smoke) |
+| **TC-08** | AI Multi-Tool & PII Scrubbing | FR-13, FR-14 | UC-04 | `AT-04` | Integration / Supporting Curl (T, D) | **Unit/Stub & PR #45 Curl Pass; Formal QA Browser Pending Key** |
+| **AT-01..AT-03** | Acceptance Tests (`UC-01..03`) | FR-01, 03–05, 09, 10, 12, 15, 16, 18, 19, NFR-07 | `UC-01..03` | — | Chrome CDP + 4-Service Compose | **`PASS` (`3/3`)** — `docs/assignment3/Test_Results_Report.md` v0.9 |
+| **AT-04** | Acceptance Test (`UC-04`) | FR-01, 06, 07, 13–17, 19, NFR-05 | `UC-04` | `TC-04`, `TC-05`, `TC-07`, `TC-08` | Chrome CDP + 4-Service Compose | **`BLOCKED` (`Steps 1, 2, 3, 8, 9 PASS`; Steps 4–7 awaiting local `GEMINI_API_KEY`)** |
 
 ### 4.2 Assignment 2 Final Submission & Quality Gate Checklist
 
@@ -533,6 +534,7 @@ As Release & QA Lead, Ahmet Sefa Efendioğlu maintains the following quality gat
 | **v1.1** | 20 Nov 2026 | Ahmet Sefa Efendioğlu | Pending team review | PA3 V&V alignment: added Verification vs. Validation test level breakdown (§1.2), added `TC` ↔ `AT-01..04` crosswalk (§4.1), updated `TC-07` / gateway rate-limiter / proxy test status to reflect 25 gateway unit/contract tests while preserving blocked E2E/Redis/Gemini statuses honestly. |
 | **v1.2** | 20 Nov 2026 | Ahmet Sefa Efendioğlu | Pending team review | Recorded live containerized `api-gateway` + `redis:7-alpine` smoke test results (`gateway-docker-redis-smoke.txt`) for `TC-07` / `FR-08`, while keeping `TC-06` connector Redis, `TC-04`/`TC-08` E2E, and `AT-01..04` honestly marked blocked. |
 | **v1.3** | 20 Nov 2026 | Ahmet Sefa Efendioğlu | Pending team review | Synced with `dev` (`440efd0`: `PR #18` + `PR #20` merged); updated Vitest count to 230 tests and recorded 3-service Compose (`web` + `api-gateway` + `redis`) integration & `S-06` network isolation smoke results (`compose-3service-smoke.txt`). |
+| **v1.4** | 22 Nov 2026 | Ahmet Sefa Efendioğlu | Pending team review | Synced with `dev` (`13f71d7`, incl. `PR #44` `egress` fix & `#45`); applied Arda's **TC-06** feedback (`≤ 850 ms` timeout-cutoff fallback vs `< 50 ms` open-circuit fallback); recorded `366/366` Vitest (`8` live Redis skipped), live 4-service Compose verification, `NFR-01`/`NFR-02` benchmark (`44.41 ms` cached P95, `99.4%` hit ratio), `AT-01..03 PASS`, and `AT-04` security/UI verification (Gemini browser steps blocked locally on missing `.env` `GEMINI_API_KEY`). |
 
 *This document constitutes the official Quality Assurance Plan deliverable for Group-ASYM in BIL 481 Software Engineering, Fall 2026, prepared under the lead authorship responsibility of Ahmet Sefa Efendioğlu.*
 

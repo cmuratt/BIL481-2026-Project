@@ -1,0 +1,25 @@
+AT-03 Execution Evidence (GIT_SHA=13f71d738a895c62d8e28293e0bf47d60b01e1d5)
+Executed at: 2026-11-22T15:41:15.825Z
+Test clock: CONNECTOR_FIXED_NOW=2026-11-23T09:00:00+03:00 (Step 7 live-mode MCP started 2026-11-22T15:39:51.575Z; elapsed at Yenile=83.4s)
+Cache reset: 2026-11-22T15:39:40.985Z
+
+--- Browser Network Entries ---
+[Step 2 ALL LIVE] POST http://localhost:3002/api/v1/query -> HTTP 200
+  req:  {"toolName":"get_library_occupancy","parameters":{"floor":"ALL"}}
+  resp: {"ok":true,"toolName":"get_library_occupancy","data":{"timestamp":"2026-11-23T06:00:06.922Z","isSimulated":true,"totalCapacity":300,"totalOccupied":101,"floors":[{"floorId":"FLOOR_1","name":"Zemin Kat - Genel Çalışma & Danışma","occupiedSeats":25,"maxSeats":100,"isQuietArea":false},{"floorId":"FLOOR_2","name":"1. Kat - Bireysel Çalışma & Kitaplık","occupiedSeats":45,"maxSeats":120,"isQuietArea":false},{"floorId":"FLOOR_3","name":"2. Kat - Sessiz Çalışma Salonu","occupiedSeats":31,"maxSeats":80,"isQuietArea":true}]},"meta":{"isSimulated":true,"isStale":false,"source":"LIVE","timestamp":"2026-11-23T06:00:06.922Z","durationMs":2}}
+[Step 5 FLOOR_3] POST http://localhost:3002/api/v1/query -> HTTP 200
+  req:  {"toolName":"get_library_occupancy","parameters":{"floor":"FLOOR_3"}}
+  resp: {"ok":true,"toolName":"get_library_occupancy","data":{"timestamp":"2026-11-23T06:00:07.113Z","isSimulated":true,"totalCapacity":80,"totalOccupied":31,"floors":[{"floorId":"FLOOR_3","name":"2. Kat - Sessiz Çalışma Salonu","occupiedSeats":31,"maxSeats":80,"isQuietArea":true}]},"meta":{"isSimulated":true,"isStale":false,"source":"LIVE","timestamp":"2026-11-23T06:00:07.113Z","durationMs":1}}
+[Step 6 ALL CACHE_HIT] POST http://localhost:3002/api/v1/query -> HTTP 200
+  req:  {"toolName":"get_library_occupancy","parameters":{"floor":"ALL"}}
+  resp: {"ok":true,"toolName":"get_library_occupancy","data":{"timestamp":"2026-11-23T06:00:06.922Z","isSimulated":true,"totalCapacity":300,"totalOccupied":101,"floors":[{"floorId":"FLOOR_1","name":"Zemin Kat - Genel Çalışma & Danışma","occupiedSeats":25,"maxSeats":100,"isQuietArea":false},{"floorId":"FLOOR_2","name":"1. Kat - Bireysel Çalışma & Kitaplık","occupiedSeats":45,"maxSeats":120,"isQuietArea":false},{"floorId":"FLOOR_3","name":"2. Kat - Sessiz Çalışma Salonu","occupiedSeats":31,"maxSeats":80,"isQuietArea":true}]},"meta":{"isSimulated":true,"isStale":false,"source":"CACHE_HIT","timestamp":"2026-11-23T06:00:06.922Z","durationMs":1}}
+[Step 7 ALL STALE] POST http://localhost:3002/api/v1/query -> HTTP 200
+  req:  {"toolName":"get_library_occupancy","parameters":{"floor":"ALL"}}
+  resp: {"ok":true,"toolName":"get_library_occupancy","data":{"timestamp":"2026-11-23T06:00:06.922Z","isSimulated":true,"totalCapacity":300,"totalOccupied":101,"floors":[{"floorId":"FLOOR_1","name":"Zemin Kat - Genel Çalışma & Danışma","occupiedSeats":25,"maxSeats":100,"isQuietArea":false},{"floorId":"FLOOR_2","name":"1. Kat - Bireysel Çalışma & Kitaplık","occupiedSeats":45,"maxSeats":120,"isQuietArea":false},{"floorId":"FLOOR_3","name":"2. Kat - Sessiz Çalışma Salonu","occupiedSeats":31,"maxSeats":80,"isQuietArea":true}]},"meta":{"isSimulated":true,"isStale":true,"source":"STALE","timestamp":"2026-11-23T06:00:06.922Z","durationMs":3}}
+
+--- Pre-Restart MCP Connector Logs (Step 2 & Step 6, cache:library:ALL) ---
+mcp-server-1  | {"event":"connector.execute","at":"2026-11-23T06:00:06.924Z","connector":"library","outcome":"LIVE","upstreamCalled":true,"cacheKey":"cache:library:ALL","durationMs":2,"circuitState":"CLOSED"}
+mcp-server-1  | {"event":"connector.execute","at":"2026-11-23T06:00:07.310Z","connector":"library","outcome":"CACHE_HIT","upstreamCalled":false,"cacheKey":"cache:library:ALL","durationMs":1,"circuitState":"CLOSED"}
+
+--- Post-Restart MCP Connector Logs (Step 7 STALE) ---
+mcp-server-1  | {"event":"connector.execute","at":"2026-11-23T06:01:18.032Z","connector":"library","outcome":"STALE","upstreamCalled":true,"cacheKey":"cache:library:ALL","durationMs":3,"failureCode":"UPSTREAM_UNAVAILABLE","circuitState":"CLOSED"}

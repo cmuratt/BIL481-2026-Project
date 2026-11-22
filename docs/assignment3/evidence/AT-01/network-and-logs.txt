@@ -1,0 +1,25 @@
+AT-01 Execution Evidence (GIT_SHA=13f71d738a895c62d8e28293e0bf47d60b01e1d5)
+Executed at: 2026-11-22T15:39:15.247Z
+Test clock: CONNECTOR_FIXED_NOW=2026-11-23T09:00:00+03:00 (MCP started 2026-11-22T15:39:11.109Z)
+Cache reset: 2026-11-22T15:39:12.533Z
+
+--- Browser Network Entries ---
+[Step 3] POST http://localhost:3002/api/v1/query -> HTTP 200
+  req:  {"toolName":"get_cafeteria_menu","parameters":{"date":"2026-11-23"}}
+  resp: {"ok":true,"toolName":"get_cafeteria_menu","data":{"date":"2026-11-23","available":true,"lunch":{"soup":"Domates Çorbası","mainDish":"Etli Kuru Fasulye","vegOption":"Mantarlı Bulgur Pilavı","sideDish":"Pirinç Pilavı","calories":1060,"allergens":["gluten","milk"]},"dinner":{"soup":"Sebze Çorbası","mainDish":"Etli Nohut","sideDish":"Şehriyeli Pilav","calories":770}},"meta":{"isSimulated":true,"isStale":false,"source":"LIVE","timestamp":"2026-11-23T06:00:18.123Z","durationMs":1}}
+[Step 6] POST http://localhost:3002/api/v1/query -> HTTP 200
+  req:  {"toolName":"get_cafeteria_menu","parameters":{"date":"2026-11-23"}}
+  resp: {"ok":true,"toolName":"get_cafeteria_menu","data":{"date":"2026-11-23","available":true,"lunch":{"soup":"Domates Çorbası","mainDish":"Etli Kuru Fasulye","vegOption":"Mantarlı Bulgur Pilavı","sideDish":"Pirinç Pilavı","calories":1060,"allergens":["gluten","milk"]},"dinner":{"soup":"Sebze Çorbası","mainDish":"Etli Nohut","sideDish":"Şehriyeli Pilav","calories":770}},"meta":{"isSimulated":true,"isStale":false,"source":"CACHE_HIT","timestamp":"2026-11-23T06:00:18.123Z","durationMs":1}}
+[Step 7] POST http://localhost:3002/api/v1/query -> HTTP 200
+  req:  {"toolName":"get_cafeteria_menu","parameters":{"date":"2026-11-22"}}
+  resp: {"ok":true,"toolName":"get_cafeteria_menu","data":{"date":"2026-11-22","available":false,"unavailableReason":"The cafeteria does not serve meals on weekends (Saturday/Sunday). / Hafta sonu yemekhane hizmeti yoktur.","lunch":null,"dinner":null},"meta":{"isSimulated":true,"isStale":false,"source":"CACHE_HIT","timestamp":"2026-11-23T06:00:17.896Z","durationMs":0}}
+[Step 8 Appendix B] POST http://127.0.0.1:3000/api/v1/query -> HTTP 400
+  resp: {"ok":false,"error":{"code":"INVALID_PARAMS","message":"'2026-99-77' is not a valid calendar date"},"timestamp":"2026-11-22T15:39:14.505Z"}
+
+--- Step 9 Mobile 375px Check ---
+scrollWidth=375, innerWidth=375 (0 horizontal overflow)
+
+--- MCP Connector Logs (cache:dining:2026-11-23) ---
+mcp-server-1  | {"event":"connector.execute","at":"2026-11-23T06:00:18.123Z","connector":"cafeteria","outcome":"LIVE","upstreamCalled":true,"cacheKey":"cache:dining:2026-11-23","durationMs":1,"circuitState":"CLOSED"}
+mcp-server-1  | {"event":"connector.execute","at":"2026-11-23T06:00:18.305Z","connector":"cafeteria","outcome":"CACHE_HIT","upstreamCalled":false,"cacheKey":"cache:dining:2026-11-23","durationMs":1,"circuitState":"CLOSED"}
+Cafeteria connector log count before/after Step 8 invalid date: 4 -> 4

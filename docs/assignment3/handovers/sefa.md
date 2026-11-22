@@ -3,66 +3,48 @@
 | Field | Detail |
 | :--- | :--- |
 | **Author** | Ahmet Sefa Efendioğlu (241101066) — `@Sefa-Efendioglu` |
-| **Component** | `apps/api-gateway/**`, `compose.yaml`, `tests/contracts/fixtures/query-{invalid-params,unauthorized}.json`, `docs/assignment3/{Deployment_Plan,Test_Results_Report}.md`, `docs/QA_Plan.md` |
-| **For** | Murat Can Işık (`mcp-server` / `shared` / `Design_Document` / `traceability`), Arda Çelik (`connectors` / `redis`), Yunus Emre Biçer (`web` / `Acceptance_Tests_and_Criteria`) |
-| **Version / Date** | 1.1, 20 November 2026 |
-| **Branch / Base SHA** | `feat/pa3-gateway-release` synced with `dev` @ `440efd088c2c2ea6a3523b7d02d7c4d14eca06a2` |
+| **Component** | `apps/api-gateway/**`, `compose.yaml`, `tests/contracts/fixtures/query-{invalid-params,unauthorized}.json`, `docs/assignment3/{Deployment_Plan,Test_Results_Report}.md`, `docs/QA_Plan.md`, `docs/assignment3/evidence/{AT-01..04,deployment,security}/` |
+| **For** | Murat Can Işık (`Design_Document` M-11, `traceability` M-12, Gemini key coordination), Arda Çelik (`TC-06` alignment), Yunus Emre Biçer (`AT-01..AT-04` v1.0 & `Test_Results_Report` v1.0) |
+| **Version / Date** | **1.2, 22 November 2026** *(1.0/1.1 published 20 Nov 2026)* |
+| **Verified Base SHA** | `dev` @ `13f71d738a895c62d8e28293e0bf47d60b01e1d5` |
 
 ---
 
-## 1. API Contract v1.1 §8 Confirmations (Owner: Sefa)
+## 1. API Contract v1.1 §8 & Compose Updates (Owner: Sefa)
 
-All three open items assigned to Sefa in API Contract v1.1 §8 are implemented as specified:
-
-- **Q4 (`AGENT_STREAM_URL`):** Gateway `POST /api/v1/chat/stream` proxies `{ "message": "<trimmed>" }` to `POST ${AGENT_STREAM_URL}` (default `http://localhost:3001/internal/agent/stream`, Compose `http://mcp-server:3001/internal/agent/stream`), passes verified `X-Authenticated-Student-Id` and `X-Authenticated-User-Role` headers (never raw `Authorization`), and streams Contract §3.3 SSE frames (`tool`, `token`, `done`, `error`).
-- **Q5 (Browser origin / no CORS):** No CORS headers are added to `apps/api-gateway` because `apps/web/next.config.ts` rewrites `/api/v1/*` server-side to `GATEWAY_URL`.
-- **Q6 (`GATEWAY_PORT=3000`):** `apps/api-gateway/src/index.ts` now reads `process.env.GATEWAY_PORT || process.env.PORT || 3000`, resolving the previous `PORT=4000` mismatch with `.env.example`.
+- **Q4 (`AGENT_STREAM_URL`), Q5 (No CORS / Next.js rewrite), Q6 (`GATEWAY_PORT=3000`):** Merged in `PR #22` and verified end-to-end across all four services.
+- **PR #44 (`fix/pa3-compose-mcp-egress`, merged on `dev`):** Added the `egress` (`driver: bridge`) network attached **solely** to `mcp-server` (`networks: [internal, egress]`) plus `GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}`. Resolved Murat's `EAI_AGAIN` Gemini DNS block (`generativelanguage.googleapis.com:443 -> TLSv1.3`) while keeping `web` (`edge` only) and `redis` (`internal` only) isolated (`web -> mcp-server:3001` & `web -> redis:6379` `BLOCKED:TIMEOUT`).
 
 ---
 
-## 2. Implemented Gateway Endpoints & Behavior
+## 2. Implemented Gateway Endpoints & Security Guarantees
 
-| Endpoint | Behavior Implemented | Error Format |
-| :--- | :--- | :--- |
-| `GET /health` | Returns `{ status: "UP", service: "api-gateway", timestamp }`; exempt from rate limiting | — |
-| `POST /api/v1/auth/mock-login` | Validates `{ studentId, name, email, role? }`, issues HS256 JWT (`MOCK_SSO_ISSUER` default `campus-mock-sso`, matching `.env.example`), returns `{ token, user, expiresIn: 3600 }` | Contract §3.4 `400 INVALID_PARAMS` |
-| `GET /api/v1/auth/me` | Returns verified `authContext` or rejects guest | Contract §3.4 `401 AUTHENTICATION_REQUIRED` |
-| `POST /api/v1/query` | **Real HTTP JSON-RPC 2.0 proxy** to `POST ${MCP_URL}` (`tools/call`). Rejects `studentId`/`student_id`/`userId` in `parameters` with `400 INVALID_PARAMS` even when authenticated; rejects guest `get_course_schedule` with `401` before calling MCP; rejects empty `{}` domain payloads (allows empty `[]` for `get_course_schedule`); preserves `meta.source`, `meta.isSimulated`, `meta.isStale`, `meta.timestamp`, `meta.durationMs`. | Contract §3.4 (`400`, `401`, `429`, `502`, `503`, `504`, `500`) |
-| `POST /api/v1/chat/stream` | Requires verified student JWT on every request; validates `message` (`1..1000` chars) and forbids identity fields in body; hijacks reply and streams SSE from `AGENT_STREAM_URL`; emits safe `event: error` (`AGENT_ERROR`) on post-header failure without token/PII/stack traces; never auto-retries. | Contract §3.4 pre-header; SSE `error` post-header |
-
-### Security & Rate Limiting Guarantees
-- Client-supplied `x-authenticated-*` headers are stripped unconditionally on every request.
-- Raw `Authorization: Bearer <JWT>` is verified (`alg === 'HS256'`, `timingSafeEqual`, valid `sub`, `role`, `exp > now`, `iss === getMockIssuer()`) and deleted before any internal forwarding.
-- `getJwtSecret()` throws if `NODE_ENV=production` and `JWT_SECRET` is unset.
-- Rate limiter (`30 req / 60s` per `studentId` or guest `clientIp`) uses `RedisRateLimiterStore` + dependency-free `RespTcpRedisClient` whenever `REDIS_URL` is set (with safe in-memory fallback on Redis outage), returning `429 RATE_LIMITED` + `Retry-After`.
+- `GET /health`: rate-limit exempt heartbeat.
+- `POST /api/v1/auth/mock-login`, `GET /api/v1/auth/me`: HS256 mock-SSO (`MOCK_SSO_ISSUER=campus-mock-sso`), `getJwtSecret()` fails fast in `NODE_ENV=production` when unset.
+- `POST /api/v1/query` & `POST /api/v1/chat/stream`: real HTTP JSON-RPC 2.0 & SSE proxies (`30 req/60s` Redis sorted-set sliding-window rate limiter via `RespTcpRedisClient` with fail-open fallback). Strips all inbound `X-Authenticated-*` and `Authorization` headers; forwards only verified identity headers; maps errors to Contract §3.4 (`400`/`401`/`429`/`502`/`503`/`504`).
 
 ---
 
-## 3. Verified vs. Blocked Status
+## 3. Verified Acceptance, Benchmark & QA Documentation Status (22 Nov 2026)
 
-- **Verified locally (`dev` @ `440efd0` merged into `feat/pa3-gateway-release`):**
-  - `tsc` across `shared`, `connectors`, `mcp-server`, `api-gateway` and `npm run typecheck --workspace @campus-orchestrator/web` passed (note: local Windows sandbox hits `EPERM: mkdir` on `.next/standalone` tracing, while Docker `node:24-alpine` builds `web` cleanly).
-  - `npx vitest run` → **20 files / 230 tests passed** (`25` in `apps/api-gateway/tests/`, `111` in `apps/web/tests/` incl. `PR #20`, `76` in `tests/connectors/`, `18` in `tests/mcp-server/`).
-  - `node apps/api-gateway/scripts/run-acceptance-harness.mjs --mode=stub-self-test` → 12/12 gateway checks passed against in-process stubs.
-  - **Docker (`29.9.3`) & Compose (`v5.7.0`) — 3-Service Compose Verified (`web` + `api-gateway` + `redis`):**
-    - `docker compose -f compose.yaml up --build -d --no-deps redis api-gateway web` brought all 3 services to `healthy`.
-    - Verified `/healthz`, `/`, `/giris`, `/asistan`, Next.js rewrite `/api/v1/auth/mock-login` (`200`), `/auth/me` (guest `401` / JWT `200`), `/api/v1/query` (`401` / `400` injection), live Redis rate limiter (`30 x 200`, 31st `429 RATE_LIMITED`, `ZCARD=30`), and `S-06` isolation (`redis` zero host ports, `web -> redis:6379` `BLOCKED:TIMEOUT`).
-    - Evidence: `docs/assignment3/evidence/deployment/gateway-docker-redis-smoke.txt`, `docs/assignment3/evidence/deployment/compose-3service-smoke.txt`.
-- **Not verified / Blocked:**
-  - Full 4-service `docker compose up --build` is blocked on missing `apps/mcp-server/Dockerfile` (`M-13`).
-  - `AT-01`..`AT-04` are all `NOT RUN (BLOCKED)`.
+Executed against `dev` @ `13f71d7` in real headless Google Chrome (`157.0.8103.79`) + full 4-service Docker Compose (`Docker 29.9.3`, `Compose v5.7.0`):
+
+- **Vitest (`npx vitest run`):** **33 / 33 files, 366 passed | 8 skipped** (`tests/connectors/redisIntegration.test.ts` requires local `REDIS_TEST_URL`).
+- **4-Service Compose & Egress (`compose-4service-egress-smoke.txt`):** 4/4 `healthy`, `mcp-server /health` reports `redis`, outbound TLS 443 OK, `S-06` isolation verified, Redis cache & live `429` rate limit verified.
+- **Official Acceptance Tests (`Acceptance_Tests_and_Criteria.md` v0.6):**
+  - **`AT-01` (UC-01):** **`PASS`** (`evidence/AT-01/` — Steps 1–9 incl. 1st `LIVE` / 2nd `CACHE_HIT` `1` upstream call, weekend, `400 INVALID_PARAMS`, `375 px` `scrollWidth=375`).
+  - **`AT-02` (UC-02):** **`PASS`** (`evidence/AT-02/` — Steps 1–8 incl. `22:30` restart empty-state `AC-02.5`).
+  - **`AT-03` (UC-03):** **`PASS`** (`evidence/AT-03/` — Steps 1–7 incl. `LIBRARY_CONNECTOR_MODE=live` at `+83.4 s` returning Redis `STALE` with original timestamp).
+  - **`AT-04` (UC-04):** **`BLOCKED`** (`evidence/AT-04/README.md`, `sefa-security-checks.txt`): Steps 1, 2, 3 (routing/prefill), 8 (forged header stripped + host `:3001` `ECONNREFUSED`), and 9 (expired/tampered JWT `401`, `0` MCP calls) **PASS**; Steps 4–7 await `GEMINI_API_KEY` in local gitignored `.env`.
+- **`NFR-01` / `NFR-02` Benchmark (`nfr-e2e-latency-cache-benchmark.txt`):** 20 concurrent students × 25 requests (`500/500` HTTP `200`), **`99.4%` cache hit ratio**, **`44.41 ms` cached P95 latency** (`44.26 ms` overall).
+- **Updated Deliverables:** `Deployment_Plan.md` **v1.0**, `QA_Plan.md` **v1.4** (applied Arda's **TC-06** threshold note from `handovers/arda.md` §5), `Test_Results_Report.md` **v0.9**.
 
 ---
 
-## 4. What Sefa Needs from Each Teammate to Unblock E2E & Compose
+## 4. Review Confirmations & Remaining Actions for Team (`S-12`)
 
-1. **From Murat (`M-02`, `M-04`..`M-08`, `M-13`):**
-   - Replace `registerSampleMockHandlers` in `apps/mcp-server/src/index.ts` with Arda's real connector runtime.
-   - Implement `AgentOrchestrator.executePlan()`, Gemini adapter (`GEMINI_API_KEY` from env), PII scrubber, and `POST /internal/agent/stream` returning Contract §3.3 SSE frames (`tool`, `token`, `done`, `error`) and trusting gateway-injected `X-Authenticated-Student-Id` / `X-Authenticated-User-Role`.
-   - Deliver `apps/mcp-server/Dockerfile` listening on `MCP_SERVER_PORT=3001` with `GET /health`.
-2. **From Arda (`A-02`, `A-12`, `Q3`):**
-   - Wire `RedisCacheStore` to a real Redis client driven by `REDIS_URL` in `packages/connectors` runtime bootstrap.
-   - Confirm `CONNECTOR_FIXED_NOW` support (Contract §8 Q3) and provide Redis verification/seed handover notes for `Deployment_Plan.md`.
-3. **From Yunus (`Y-07` — `PR #18` & `PR #20` already merged and Compose-verified):**
-   - Complete `Y-07` chat UI wiring against `POST /api/v1/chat/stream`.
-   - Review `docs/assignment3/Deployment_Plan.md` and `docs/assignment3/Test_Results_Report.md` (gateway `MOCK_SSO_ISSUER` default is `campus-mock-sso` matching `.env.example`).
+1. **For Murat (`M-11` / `M-12` Design & Traceability Review):**
+   - **Confirmed:** `docs/Design_Document.md` **v1.3** sections **§2.2.4** and **§2.3.5** and `docs/assignment3/traceability.md` **v0.3** accurately reflect the implemented API gateway, Redis rate limiter, token termination, and error contracts. The pre-`PR #44` Compose note ("`mcp-server` on `internal: true` cannot reach Gemini") is now resolved by `PR #44` (`egress` network + `GEMINI_MODEL`).
+   - **To reach `4/4` AT PASS (`Test_Results_Report.md` v1.0):** Share `GEMINI_API_KEY` out-of-band (never committed) or coordinate a live QA run of `AT-04` Steps 4–7 through Chrome on `/asistan`.
+2. **For Arda:** `TC-06` in `docs/QA_Plan.md` **v1.4** now states `≤ 850 ms` (`800 ms` timeout cutoff + `50 ms` overhead) for Step 3 and `< 50 ms` for Step 5 open-circuit fallback, and live Redis `STALE` fallback passed end-to-end in `AT-03` Step 7.
+3. **For Yunus:** `AT-01..AT-03` execution records & screenshots are ready under `docs/assignment3/evidence/AT-01..03/`; ready for `Acceptance_Tests_and_Criteria.md` **v1.0** freeze on 26 Nov.
