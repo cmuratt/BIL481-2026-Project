@@ -1,0 +1,16 @@
+AT-04 QA Security & UI Checks (GIT_SHA=13f71d738a895c62d8e28293e0bf47d60b01e1d5)
+Executed at: 2026-11-22T15:41:20.035Z
+NOTE: Steps 1, 2, 3 (routing/prefill), 8, 9 executed by QA Lead (Sefa).
+      Steps 4-7 (real Gemini streaming) remain BLOCKED on this machine because local .env has no GEMINI_API_KEY.
+
+[Step 1] Guest get_course_schedule -> HTTP 401: {"ok":false,"error":{"code":"AUTHENTICATION_REQUIRED","message":"Authentication required for personal course schedule lookup."},"timestamp":"2026-11-22T15:41:17.962Z"}
+[Step 1 UI] /asistan #chat-message.disabled=true, Gonder.disabled=true
+[Step 2 UI] /giris mock-login demo-student-01 -> redirected to /asistan, header shows Demo Öğrenci 1 & Çıkış
+[Step 3 UI] QueryBox COMPOUND_QUERY -> /asistan prefilled="10:30 dersimden sonra ringe yetişir miyim, bugün yemekte ne var?", Gonder.disabled=false
+[Step 8a] demo-student-01 schedule entries=1; forged X-Authenticated-Student-Id: demo-student-02 deep-equal=true
+[Step 8b] forged header without JWT -> HTTP 401
+[Step 8c] mcp-server Ports={"3001/tcp":null}; direct host POST http://127.0.0.1:3001/mcp -> FAILED (ECONNREFUSED)
+[Step 9a] expired JWT (eyJ...<redacted>) chat/stream -> HTTP 401: {"ok":false,"error":{"code":"AUTHENTICATION_REQUIRED","message":"Token expired"},"timestamp":"2026-11-22T15:41:19.604Z"}
+[Step 9b] tampered JWT (eyJ...<redacted>) chat/stream -> HTTP 401: {"ok":false,"error":{"code":"AUTHENTICATION_REQUIRED","message":"Invalid token signature"},"timestamp":"2026-11-22T15:41:19.611Z"}
+[Step 9 MCP logs] mcp-server log line count unchanged (10 -> 10)
+Redis keys check (student2 logged in=demo-student-02): cache isolation verified separately in PR #31 & PR #45.

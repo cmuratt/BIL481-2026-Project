@@ -1,0 +1,27 @@
+AT-02 Execution Evidence (GIT_SHA=13f71d738a895c62d8e28293e0bf47d60b01e1d5)
+Executed at: 2026-11-22T15:39:39.380Z
+Test clocks: 2026-11-23T09:00:00+03:00 then 2026-11-23T22:30:00+03:00 (MCP started 2026-11-22T15:39:28.266Z)
+Cache reset: 2026-11-22T15:39:17.087Z
+
+--- Browser Network Entries ---
+[Step 2] POST http://localhost:3002/api/v1/query -> HTTP 200
+  req:  {"toolName":"get_shuttle_schedule","parameters":{"route":"MAIN_RING"}}
+  resp: {"ok":true,"toolName":"get_shuttle_schedule","data":{"routeId":"MAIN_RING","routeName":"Ana Ring Hattı (Kampüs – Metro – Yurtlar)","nextDepartures":["09:15","09:30","09:45"],"activeVehicles":3,"lastUpdated":"2026-11-23T06:00:22.220Z"},"meta":{"isSimulated":true,"isStale":false,"source":"LIVE","timestamp":"2026-11-23T06:00:22.220Z","durationMs":1}}
+[Step 5] POST http://localhost:3002/api/v1/query -> HTTP 200
+  req:  {"toolName":"get_shuttle_schedule","parameters":{"route":"MAIN_RING"}}
+  resp: {"ok":true,"toolName":"get_shuttle_schedule","data":{"routeId":"MAIN_RING","routeName":"Ana Ring Hattı (Kampüs – Metro – Yurtlar)","nextDepartures":["09:15","09:30","09:45"],"activeVehicles":3,"lastUpdated":"2026-11-23T06:00:22.220Z"},"meta":{"isSimulated":true,"isStale":false,"source":"CACHE_HIT","timestamp":"2026-11-23T06:00:22.220Z","durationMs":0}}
+[Step 6 Metro] POST http://localhost:3002/api/v1/query -> HTTP 200
+  req:  {"toolName":"get_shuttle_schedule","parameters":{"route":"METRO_LINE"}}
+  resp: {"ok":true,"toolName":"get_shuttle_schedule","data":{"routeId":"METRO_LINE","routeName":"Metro Bağlantı Hattı (Kampüs – Metro Durağı)","nextDepartures":["09:20","09:40","10:00"],"activeVehicles":3,"lastUpdated":"2026-11-23T06:00:22.637Z"},"meta":{"isSimulated":true,"isStale":false,"source":"LIVE","timestamp":"2026-11-23T06:00:22.637Z","durationMs":1}}
+[Step 6 Yurtlar] POST http://localhost:3002/api/v1/query -> HTTP 200
+  req:  {"toolName":"get_shuttle_schedule","parameters":{"route":"DORMITORY_LINE"}}
+  resp: {"ok":true,"toolName":"get_shuttle_schedule","data":{"routeId":"DORMITORY_LINE","routeName":"Yurtlar Servisi (Ana Kampüs – Yurtlar)","nextDepartures":["09:15","09:45","10:15"],"activeVehicles":1,"lastUpdated":"2026-11-23T06:00:22.753Z"},"meta":{"isSimulated":true,"isStale":false,"source":"LIVE","timestamp":"2026-11-23T06:00:22.753Z","durationMs":1}}
+[Step 7 Appendix B] POST http://127.0.0.1:3000/api/v1/query -> HTTP 400
+  resp: {"ok":false,"error":{"code":"INVALID_PARAMS","message":"Invalid parameters for 'get_shuttle_schedule': route: Invalid route. Allowed values: MAIN_RING, METRO_LINE, DORMITORY_LINE."},"timestamp":"2026-11-22T15:39:17.871Z"}
+[Step 8 22:30 Yurtlar] POST http://localhost:3002/api/v1/query -> HTTP 200
+  req:  {"toolName":"get_shuttle_schedule","parameters":{"route":"DORMITORY_LINE"}}
+  resp: {"ok":true,"toolName":"get_shuttle_schedule","data":{"routeId":"DORMITORY_LINE","routeName":"Yurtlar Servisi (Ana Kampüs – Yurtlar)","nextDepartures":[],"activeVehicles":0,"lastUpdated":"2026-11-23T19:30:06.330Z"},"meta":{"isSimulated":true,"isStale":false,"source":"LIVE","timestamp":"2026-11-23T19:30:06.330Z","durationMs":1}}
+
+--- Pre-Restart MCP Connector Logs (cache:shuttle:MAIN_RING) ---
+mcp-server-1  | {"event":"connector.execute","at":"2026-11-23T06:00:22.221Z","connector":"shuttle","outcome":"LIVE","upstreamCalled":true,"cacheKey":"cache:shuttle:MAIN_RING","durationMs":1,"circuitState":"CLOSED"}
+mcp-server-1  | {"event":"connector.execute","at":"2026-11-23T06:00:22.517Z","connector":"shuttle","outcome":"CACHE_HIT","upstreamCalled":false,"cacheKey":"cache:shuttle:MAIN_RING","durationMs":0,"circuitState":"CLOSED"}
