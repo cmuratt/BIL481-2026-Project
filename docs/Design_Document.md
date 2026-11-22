@@ -7,7 +7,7 @@
 | **Course** | BIL 481 Software Engineering, Fall 2026, TOBB University of Economics and Technology |
 | **Assignment** | Project Assignment 2 (Design & Skeleton); updated during Project Assignment 3 (Implementation & Deployment) |
 | **Group Name** | Group-ASYM |
-| **Document Version / Date** | Version 1.2 (PA3 working update — web client, MCP server and agent), 21 November 2026. Version 1.0 (PA2 final deliverable, 15 November 2026) is preserved in the Git history of `main`; see the [Change Record](#change-record). |
+| **Document Version / Date** | Version 1.3 (PA3 working update — web client, MCP server, agent, gateway and connector tier), 22 November 2026. Version 1.0 (PA2 final deliverable, 15 November 2026) is preserved in the Git history of `main`; see the [Change Record](#change-record). |
 | **Repository Filepath** | `docs/Design_Document.md` |
 | **Related Baseline Documents** | `docs/Project_Definition_Document.md`, `docs/Project_Plan_Document.md`, `docs/Requirements_Document.md`, `docs/QA_Plan.md` |
 
@@ -28,6 +28,8 @@ In compliance with the BIL 481 Project Assignment 2 specification, each team mem
 
 **PA3 update (Version 1.2):** The MCP server and agent sections (1.2, 1.3, 2.1 diagram, 2.2.1, 2.3.2, 3.5, 5, 6) were updated by Murat Can Işık (document lead and author of the MCP server and agent, M-11) from his own handover ([`docs/assignment3/handovers/murat.md`](assignment3/handovers/murat.md)), checked against `dev` at `db57ed9`. Statements that depend on pull requests that are not merged yet say so. The gateway and connector sections are not part of this revision; they follow when their handovers are merged.
 
+**PA3 update (Version 1.3):** The gateway sections (1.2, 1.3, 2.2.4, 2.3.5) and the connector sections (1.2, 1.3, 2.2.3, 2.3.4) were updated by Murat Can Işık (document lead, M-11) from the handovers of their authors ([`handovers/sefa.md`](assignment3/handovers/sefa.md), [`handovers/arda.md`](assignment3/handovers/arda.md)); every statement was checked against the code on `dev` at `13b8fb8`, and the MCP and agent statements of Version 1.2 were brought up to date with PR #34, #35, #36 and #39. The authors of the gateway and connector sections should confirm the wording of their parts.
+
 ---
 
 ## Change Record
@@ -37,6 +39,7 @@ In compliance with the BIL 481 Project Assignment 2 specification, each team mem
 | 1.0 | 15 Nov 2026 | All | PA2 final deliverable (design and skeleton). | All members (see attribution above) |
 | 1.1 | 20 Nov 2026 | Header, 1.2, 1.3, 2.1.1, 2.1.2, 2.2.2, 2.3.3, 2.4, 3.2–3.6, 5, 6 | Web client moved from *Planned* to *Implemented* (Next.js 16 App Router, React 19, CSS Modules); three dashboard cards instead of four; router step for personal-timetable words and held-out measurement; current web interfaces; implemented UI vs. wireframe differences; Next.js rewrite of `/api/v1/*` in the sequence diagrams; **design decision: no automatic SSE reconnect** (API Contract v1.1 §3.3). Source: web client handover (Y-13). | Murat Can Işık (source: Yunus Emre Biçer) |
 | 1.2 | 21 Nov 2026 | Header, 1.2, 1.3, 2.1 diagram, 2.2.1, 2.3.2, 3.5, 5, 6 | MCP server and AI agent moved from *Planned* to *Implemented*: connector runtime behind the four tools (M-02), real `AgentOrchestrator` with `LlmProvider`, `GeminiProvider` and `FakeProvider`, PII scrubber and redacted outbound log, `POST /internal/agent/stream` (SSE, API Contract v1.1 §3.3). UC-04 flow rewritten to what the code does: the agent runs inside the MCP process and calls the dispatcher in-process; tools run once each, in the order the model asks. **Honest limits recorded:** the real Gemini run was done only directly on the agent (not through the stream endpoint, gateway and UI); `tools/call` through standard MCP clients is an open gap (content type `json`). Source: MCP/agent handover (`handovers/murat.md`) and the code on `dev` at `db57ed9`; PR #34 (stream endpoint), #35 (Gemini 3 fix) and the SSE session fix are marked as open. | Murat Can Işık |
+| 1.3 | 22 Nov 2026 | Header, 1.2, 1.3, 2.1 diagram, 2.2.1, 2.2.3, 2.2.4, 2.3.2, 2.3.4, 2.3.5, 3.5, 5, 6 | **Gateway and connector tier moved from *Planned* to *Implemented*** (sources: `handovers/sefa.md` and `handovers/arda.md`, checked against the code on `dev`): real HTTP proxies from the gateway to the MCP server and to the agent, Redis-backed rate limiter with in-memory fallback, error bodies of API Contract v1.1 §3.4; connector Redis runtime selected by `REDIS_URL`, `CONNECTOR_FIXED_NOW` test clock, contract metadata in the MCP JSON block, execution log. **MCP/agent status synchronised:** agent stream, Gemini 3 fix, SSE fix and tool log (PR #34, #35, #36, #39) are merged; one `tool_call` log line per executed tool (AC-04.5); Redis now backs the MCP cache. **Deployment finding recorded:** with `compose.yaml` as on `dev`, `mcp-server` is only on the `internal: true` network and cannot reach the Gemini API. The web statements about the chat screen (Y-07, Y-08) and the viewport checks (Y-10) were brought in line with `handovers/yunus.md` v1.1. Statements about measurements that were not run say so. | Murat Can Işık (sources: Sefa, Arda) |
 
 ---
 
@@ -115,7 +118,7 @@ To ensure absolute engineering transparency, the system architecture distinguish
   - **Campus Connectors & Resilience (`packages/connectors`):** Pluggable `ICampusConnector` contracts, deterministic seeded synthetic mock data generators (Mulberry32 PRNG), `InMemoryCacheStore`, 3-state circuit breaker state machine, and stale-if-error fallback executor (FR-03–06, FR-09–12).
   - **Test Infrastructure:** Vitest 5.1.0 test runner executing 146 offline unit and integration tests across 10 test files with zero external service dependencies (NFR-08). *(PA2 baseline. On `dev` at `6cc1d07`, 20 Nov 2026: 230 tests in 20 files, of which 111 are web tests.)*
 
-- **Implemented in Phase 3 (PA3, state of `dev` at `db57ed9`, 21 November 2026) — web client, MCP server and agent in this revision:**
+- **Implemented in Phase 3 (PA3, state of `dev` at `13b8fb8`, 22 November 2026) — web client, MCP server, agent, gateway and connector tier:**
   - **Presentation UI (`apps/web`):** Next.js 16.4.6 (App Router), React 19.3.1 and CSS Modules (no Tailwind; team decision, 19 Nov 2026), Turkish UI. Pages: dashboard `/`, assistant `/asistan`, login `/giris`, health check `/healthz` (FR-18, NFR-09 web part).
   - **Dashboard cards and gateway client:** three cards (cafeteria, shuttle, library) using a typed client for `POST /api/v1/query` (API Contract v1.1 §3.2, §3.4) and a fixture mode with a visible "Örnek veri modu" (sample data mode) banner (FR-18, FR-19).
   - **Mock-SSO login and sign-out (FR-15):** two fixed synthetic personas; JWT kept only in `sessionStorage`.
@@ -123,13 +126,16 @@ To ensure absolute engineering transparency, the system architecture distinguish
   - **Web Docker image** with standalone Next.js output and `/healthz` (NFR-09, web part).
   - **MCP server on real connectors (M-02, PR #26):** the four tools are served by the `packages/connectors` runtime (mock mode, TTL cache, stale-if-error, circuit breaker); responses carry `isSimulated`, `isStale`, `source`, `timestamp` and `durationMs`; the internal service sends no CORS header. MCP Docker image (M-13).
   - **AI agent (M-04..M-07, PR #29):** `AgentOrchestrator` with an `LlmProvider` boundary, `GeminiProvider` (REST through `fetch`, no SDK), `FakeProvider` for tests only, fail-closed PII scrubber and a redacted outbound log (FR-13, FR-14).
-  - **Open pull requests (not on `dev` yet):** `POST /internal/agent/stream` (M-08, PR #34); Gemini 3 `thoughtSignature` handling, retry on transient errors and the default model `gemini-3.5-flash-lite` (PR #35); SSE session fix for the legacy MCP transport.
+  - **Agent stream, Gemini fixes, SSE fix and tool log (PR #34, #35, #36, #39, merged):** `POST /internal/agent/stream`; Gemini 3 `thoughtSignature` handling, retry on transient errors and the default model `gemini-3.5-flash-lite`; session fix of the legacy MCP SSE transport; one `tool_call` log line per executed tool.
+  - **API gateway (`apps/api-gateway`, S-01, S-03):** real HTTP proxy to the MCP server (`POST /api/v1/query`) and to the agent (`POST /api/v1/chat/stream`, SSE passed through), mock-SSO login, error bodies of API Contract v1.1 §3.4, sliding-window rate limiter backed by Redis with an in-memory fallback. Verified in the three-service Compose stack (web, gateway, Redis).
+  - **Connector tier (`packages/connectors`, A-01..A-12, PR #30 and #31):** Redis cache runtime selected by `REDIS_URL`, `CONNECTOR_FIXED_NOW` test clock, `source`/`isSimulated`/`isStale`/`timestamp`/`durationMs` metadata in the MCP JSON block, one execution log line per call, per-student cache isolation.
+  - **Four-service Compose stack:** started healthy on 22 Nov 2026 (curl run through the gateway with the real Gemini provider, Redis as the cache). It needs one change in `compose.yaml` (section 2.2.1 item 8). Evidence: `docs/assignment3/evidence/AT-04/gateway-agent-gemini-compose-smoke.txt` (PR #41, open).
 
 - **Planned for Phase 3 (Core Development Roadmap):**
-  - **Presentation UI (remaining):** chat screen with streamed answer and one badge per tool (Y-07), remaining chat states (Y-08) and cross-browser/viewport checks (Y-10).
-  - **AI Agent — remaining work:** run the real chain (web chat → gateway → `/internal/agent/stream` → Gemini) once PR #34 and #35 are merged; until then the acceptance test AT-04 and criterion AC-04.11 are **not** satisfied. Results obtained with `FakeProvider` are never reported as the real UC-04 run.
-  - **Centralized Infrastructure & Caching:** Live Redis 7.2 containerized service (replacing in-memory stores for multi-instance cache and atomic sliding-window rate limiting) via Docker Compose (FR-08–11).
-  - **Production Gateway Plugins:** Ecosystem plugins (`@fastify/jwt`, `@fastify/rate-limit`, `@fastify/http-proxy`) and official MCP Streamable HTTP transport integration.
+  - **Presentation UI (remaining):** the chat screen with a streamed answer and one badge per tool (Y-07, Y-08) is merged (PR #32). The viewport and browser checks (Y-10) are recorded in [`handovers/yunus.md`](assignment3/handovers/yunus.md) v1.1 (Chromium and Firefox done; Safari was checked by Arda in the PR #33 discussion).
+  - **AI Agent — remaining work:** run AT-04 in the browser (QA owner) after `compose.yaml` gives `mcp-server` a network with internet access; until then AT-04 and criterion AC-04.11 are **not** satisfied formally. The curl run of 22 Nov through the gateway is preparation evidence only. Results obtained with `FakeProvider` are never reported as the real UC-04 run.
+  - **Measurements (NFR-01, NFR-02):** Redis is wired for the cache and the rate limiter. The connector-tier hit ratio and cache-path latency were measured by simulation (hit ratio 98.7 %, cache-path p95 well below 1 ms, Arda); **end-to-end p95 latency and hit ratio were not run** (they need a load run on the deployed stack).
+  - **Not done and not planned for PA3:** the Fastify ecosystem plugins (`@fastify/jwt`, `@fastify/rate-limit`, `@fastify/http-proxy`; the gateway uses its own verifier, rate limiter and proxy code on Fastify core) and the official MCP Streamable HTTP transport.
   - **Persistence & Telemetry:** PostgreSQL 16 database and Prisma ORM for cryptographically hashed student audit records, tool execution latency telemetry, and error logging (FR-20).
 
 #### Dual Data Flow Pathways
@@ -149,9 +155,9 @@ flowchart TD
     end
 
     subgraph Tier2["2. API Gateway & Security Perimeter (Fastify)"]
-        Gateway["Fastify API Gateway Skeleton"]
+        Gateway["Fastify API Gateway"]
         AuthBoundary["JWT Token Termination & Header Injection (FR-07)"]
-        RateLimiter["Sliding-Window Rate Limiter (Phase 2: In-Memory | Phase 3: Redis)"]
+        RateLimiter["Sliding-Window Rate Limiter (Redis when REDIS_URL is set, in-memory fallback)"]
         Gateway --> AuthBoundary
         AuthBoundary --> RateLimiter
     end
@@ -168,7 +174,7 @@ flowchart TD
         MCPServer["MCP Server (FR-01, FR-02: Stdio + Legacy SSE)"]
         ToolRegistry["Tool Definitions Registry (Strict Schemas)"]
         Dispatcher["ToolDispatcher Engine & Auth Guard"]
-        CacheStore["Multi-Tiered Cache (Phase 2: InMemory | Phase 3: Redis)"]
+        CacheStore["Multi-Tiered Cache (Redis in Compose; in-memory for tests and offline development)"]
         CircuitBreaker["Isolated Circuit Breakers (FR-11)"]
 
         MCPServer --> ToolRegistry
@@ -208,13 +214,13 @@ The system distinguishes between technologies actively implemented and executed 
 | **MCP Server Core** | `@modelcontextprotocol/sdk` | SDK 1.32.2 | **Implemented (Phase 2)** | Stateless JSON-RPC 2.0 protocol implementation, Stdio and legacy HTTP+SSE (`SSEServerTransport`) transports, `/mcp` and `/health` endpoints (FR-01, FR-02). |
 | **Schema Validation** | Zod | Zod 3.23.8 | **Implemented (Phase 2)** | Runtime parameter validation enforcing strict JSON Schema schemas (`additionalProperties: false`, `.strict()`) across all MCP tools. |
 | **Intent Routing** | TypeScript RegExp Engine (`apps/web`) | TS 5.4.5 | **Implemented (Phase 2)** | Client-side bilingual (Turkish/English) deterministic intent classification (`routeStudentQuery`) with zero external runtime dependencies (FR-16). |
-| **API Gateway Core** | Fastify | Fastify 4.28.1 | **Implemented (Phase 2)** | High-throughput gateway skeleton, custom mock-SSO JWT verification, token stripping, header injection, and in-memory rate limiting (FR-07, FR-08). |
+| **API Gateway Core** | Fastify | Fastify 4.28.1 | **Implemented (PA3)** | Mock-SSO JWT verification, token termination and header injection, HTTP proxy to the MCP server and to the agent (SSE pass-through), Redis-backed rate limiting with in-memory fallback, API Contract v1.1 §3.4 error bodies (FR-07, FR-08). |
 | **Connector Resilience** | In-Memory Cache & Circuit Breaker | Native TypeScript | **Implemented (Phase 2)** | Seeded synthetic mock generators (Mulberry32 PRNG), `InMemoryCacheStore`, 3-state circuit breaker, and stale-if-error fallback executor (FR-03–06, FR-09–12). |
 | **Testing & Verification** | Vitest | Vitest 5.1.0 | **Implemented (Phase 2)** | Offline/mock unit and integration testing suite (146 tests, 10 files in PA2; 230 tests, 20 files on `dev` at `6cc1d07`) for air-gapped CI/CD compliance (NFR-08). |
-| **Presentation UI** | Next.js (App Router), React, CSS Modules | Next.js 16.4.6, React 19.3.1 | **Implemented (Phase 3)** | Dashboard with three cards, mock-SSO login/sign-out and the SSE chat stream client (FR-15, FR-17, FR-18). The chat screen is planned (Y-07). Tailwind CSS was dropped in favour of CSS Modules (fewer dependencies; team decision, 19 Nov 2026). |
-| **AI / LLM Integration** | Google Gemini REST API (`generateContent`) through `fetch`; no SDK | Default model `gemini-3.5-flash-lite` (`GEMINI_MODEL`); model availability depends on the account | **Implemented (PA3)**: agent core on `dev` (PR #29); stream endpoint and Gemini 3 fix in open PRs #34, #35; not yet run end to end | Multi-tool function calling, contextual synthesis, prompt PII scrubber (FR-13, FR-14). On 21 Nov 2026 `gemini-2.0-flash`, `gemini-2.5-flash` and `gemini-2.5-flash-lite` answered 404 for the team key, so the model name must be re-checked before the demo. |
-| **Centralized Caching** | Redis | Redis 7.2 (Alpine) | **Planned (Phase 3)** | Shared multi-instance TTL cache (replacing `InMemoryCacheStore`) and distributed atomic sliding-window rate limiting (replacing `InMemoryRateLimiterStore`) (FR-08–11). |
-| **Gateway Production Plugins** | `@fastify/jwt`, `@fastify/rate-limit`, `@fastify/http-proxy` | Latest Fastify 4.x Plugins | **Planned (Phase 3)** | Ecosystem plugins for production JWT verification, reverse proxy routing to MCP server, and Redis cluster rate limiting. |
+| **Presentation UI** | Next.js (App Router), React, CSS Modules | Next.js 16.4.6, React 19.3.1 | **Implemented (Phase 3)** | Dashboard with three cards, mock-SSO login/sign-out and the SSE chat stream client (FR-15, FR-17, FR-18). The chat screen with the streamed answer and tool badges is implemented (Y-07, Y-08, PR #32). Tailwind CSS was dropped in favour of CSS Modules (fewer dependencies; team decision, 19 Nov 2026). |
+| **AI / LLM Integration** | Google Gemini REST API (`generateContent`) through `fetch`; no SDK | Default model `gemini-3.5-flash-lite` (`GEMINI_MODEL`); model availability depends on the account | **Implemented (PA3)**: agent core, stream endpoint, Gemini 3 fix and tool log on `dev` (PR #29, #34, #35, #39); one curl run through the gateway in Compose on 22 Nov, not yet run in the browser | Multi-tool function calling, contextual synthesis, prompt PII scrubber (FR-13, FR-14). On 21 Nov 2026 `gemini-2.0-flash`, `gemini-2.5-flash` and `gemini-2.5-flash-lite` answered 404 for the team key, so the model name must be re-checked before the demo. |
+| **Centralized Caching** | Redis | Redis 7.2 (Alpine) | **Implemented (PA3)** | Shared TTL cache of the connector tier (`RedisCacheStore` through the official `redis` client, selected by `REDIS_URL`) and the sliding-window rate limiter of the gateway (FR-08–11). Seen working in the four-service Compose stack on 22 Nov 2026; end-to-end hit ratio not measured. |
+| **Gateway Production Plugins** | `@fastify/jwt`, `@fastify/rate-limit`, `@fastify/http-proxy` | Latest Fastify 4.x Plugins | **Not used (not planned for PA3)** | The gateway implements JWT verification, rate limiting and proxying itself on Fastify core (no extra dependencies). |
 | **Persistence & Telemetry** | PostgreSQL, Prisma ORM | PostgreSQL 16, Prisma 5.x | **Planned (Phase 3)** | Cryptographically hashed student audit records, tool execution latency telemetry, and error logging (FR-20). |
 
 ---
@@ -336,28 +342,29 @@ The core middleware server coordinates tool discovery, validation, dispatching, 
    - *Handler Lookup:* Returns a structured `NOT_IMPLEMENTED` error if no handler is attached.
    - *Execution:* Invokes the handler and wraps output in an `MCPToolResponse` envelope.
 3. **Dual Transport Layers (`src/server.ts`, `src/index.ts`):**
-   - *HTTP Transport (Legacy HTTP+SSE & Custom JSON-RPC Endpoint):* HTTP connectivity uses `@modelcontextprotocol/sdk`'s `SSEServerTransport` (the legacy MCP HTTP-with-SSE protocol: `GET /sse` or `GET /mcp` opens the stream, the client then posts to the `POST /mcp/messages?sessionId=…` endpoint announced in the first event) alongside a custom JSON-RPC 2.0 `POST /mcp` endpoint for the gateway with `X-Authenticated-*` identity extraction, `GET /health` (including `agent.provider`) and the agent stream endpoint (item 6). The SDK announces its own session id, so sessions are keyed by `transport.sessionId`; the MCP Inspector check (M-09) found that an earlier version keyed them by a random id and answered 404 on every message (fixed in an open PR). One `Server` object serves all SSE sessions, so several simultaneous SSE clients are not supported; the gateway does not use SSE. The official MCP Streamable HTTP transport is not implemented and not claimed.
+   - *HTTP Transport (Legacy HTTP+SSE & Custom JSON-RPC Endpoint):* HTTP connectivity uses `@modelcontextprotocol/sdk`'s `SSEServerTransport` (the legacy MCP HTTP-with-SSE protocol: `GET /sse` or `GET /mcp` opens the stream, the client then posts to the `POST /mcp/messages?sessionId=…` endpoint announced in the first event) alongside a custom JSON-RPC 2.0 `POST /mcp` endpoint for the gateway with `X-Authenticated-*` identity extraction, `GET /health` (including `agent.provider`) and the agent stream endpoint (item 6). The SDK announces its own session id, so sessions are keyed by `transport.sessionId`; the MCP Inspector check (M-09) found that an earlier version keyed them by a random id and answered 404 on every message (fixed in PR #36). One `Server` object serves all SSE sessions, so several simultaneous SSE clients are not supported; the gateway does not use SSE. The official MCP Streamable HTTP transport is not implemented and not claimed.
    - *Stdio Transport:* Implemented via `@modelcontextprotocol/sdk`'s `StdioServerTransport` for CLI-based clients (such as Claude Desktop or the MCP Inspector CLI), strictly routing diagnostic logs to `stderr` and reserving `stdout` exclusively for clean JSON-RPC messaging.
-4. **Connector Runtime behind the Tools (`src/server.ts`, M-02):** `createCampusMcpServer` builds `createConnectorRuntime()` from `packages/connectors` (mock or live mode per connector, TTL cache, stale-if-error, circuit breaker) and registers its handlers on the dispatcher. The Phase 2 sample handlers (`src/mocks/sampleMockHandlers.ts`) remain only as an opt-in test fixture (`registerSampleMocks`). Tool results carry `isSimulated`, `isStale`, `source`, `timestamp` and `durationMs` in the JSON block (API Contract v1.1 §3.2). The cache is in-memory in the MCP process until the Redis runtime of the connector tier (Arda, PR #31) is merged.
+4. **Connector Runtime behind the Tools (`src/server.ts`, M-02):** `createCampusMcpServer` builds `createConnectorRuntime()` from `packages/connectors` (mock or live mode per connector, TTL cache, stale-if-error, circuit breaker) and registers its handlers on the dispatcher. The Phase 2 sample handlers (`src/mocks/sampleMockHandlers.ts`) remain only as an opt-in test fixture (`registerSampleMocks`). Tool results carry `isSimulated`, `isStale`, `source`, `timestamp` and `durationMs` in the JSON block (API Contract v1.1 §3.2). With `REDIS_URL` set (always in Compose) the cache is the shared Redis; without it the cache is in-memory with a warning, and `NODE_ENV=production` refuses to start (section 2.2.3 item 6).
 5. **AI Agent Orchestrator (`src/agent/`, M-04..M-07):**
    - *Loop (`AgentOrchestrator.run`):* an `AsyncGenerator<AgentEvent>`. The provider asks for tools; each requested call is validated and executed through the `ToolDispatcher` **in the same process** (not as an HTTP `tools/call`) with the gateway-verified `AuthContext`; results go back to the provider; the provider writes the answer. At most 4 provider rounds, the last one offers no tools. Calls requested in one round run in the order the model gives them, not concurrently.
    - *Identity boundary:* the tool declarations offered to the model contain no `studentId`; identity-like arguments (`studentId`, `userId`, `email`, `name`) a model might add are stripped; the student comes only from the verified header. Each tool is executed at most once per run (a repeated request is refused and produces no `tool` event).
-   - *Provider boundary (`LlmProvider`):* `GeminiProvider` calls the Gemini REST API with `fetch`; the API key is sent only in the `x-goog-api-key` header. Gemini 3 models attach a `thoughtSignature` to function calls, which is kept on `LlmFunctionCall` and sent back unchanged (otherwise HTTP 400). Transient 429/500/502/503/504 answers are retried twice (500 ms, 1000 ms) inside one overall timeout (15 s default). **Both are in PR #35, which is open; on `dev` the signature is still dropped, so a tool round against a Gemini 3 model fails there.** `FakeProvider` is a deterministic test double and is marked `isFake` in every log entry.
+   - *Provider boundary (`LlmProvider`):* `GeminiProvider` calls the Gemini REST API with `fetch`; the API key is sent only in the `x-goog-api-key` header. Gemini 3 models attach a `thoughtSignature` to function calls, which is kept on `LlmFunctionCall` and sent back unchanged (otherwise HTTP 400). Transient 429/500/502/503/504 answers are retried twice (500 ms, 1000 ms) inside one overall timeout (15 s default). `FakeProvider` is a deterministic test double and is marked `isFake` in every log entry.
    - *PII (FR-14):* the question and every tool result are scrubbed; the serialized request is checked again (`assertNoPii`) and the run fails closed if an identifier remains. Tool output keeps `isSimulated` and `isStale`, and the system instruction asks the model to say so.
-   - *Outbound log (AC-04.7):* every provider request is recorded after scrubbing (console; additionally a file when `AGENT_OUTBOUND_LOG_FILE` is set). Credentials are never part of a request body.
+   - *Logs (AC-04.5, AC-04.7):* the agent calls the `ToolDispatcher` inside the MCP process, so no JSON-RPC `tools/call` exists to inspect. Two kinds of lines are written to the console (`[agent-outbound]`, `[agent-tool]`) and, when `AGENT_OUTBOUND_LOG_FILE` is set, to that file: one line per provider request after scrubbing (with `provider` and `isFake`), and one `tool_call` line per **executed** tool with the arguments really dispatched (identity keys removed, values scrubbed), `status` and `durationMs`. A refused call (unknown or repeated tool) writes no line. The history sent back to the provider carries the same cleaned arguments, so an identity key added by the model neither leaks nor aborts the run. Credentials are never part of a logged request.
    - *Errors:* a provider or tool problem ends the run with one `error` event carrying a fixed safe message; details go only to the server log. The answer is produced first and then split into `token` chunks of about three words, so streaming is of the finished answer, not of the provider.
-6. **Agent Stream Endpoint (`src/agent/agentStreamHandler.ts`, M-08, PR #34 open):** `POST /internal/agent/stream` with body `{"message": "…"}` (1–1000 characters, no other key) and identity from `X-Authenticated-Student-Id` / `X-Authenticated-User-Role` (API Contract v1.1 §3.3, §8 Q4). Before the stream: `400 INVALID_PARAMS` for a bad body, `503 AGENT_UNAVAILABLE` when no `GEMINI_API_KEY` is set (the endpoint never falls back to the fake provider), both as JSON in the §3.4 shape. Then `200 text/event-stream; charset=utf-8` with `Cache-Control: no-cache` and the frames `tool` (once per executed tool), `token`, one `done`, or one `error`; a failure after the headers is an `error` event. If the client closes the connection, the provider call is cancelled with an `AbortSignal`. The endpoint does not authenticate; the gateway does, and the port is internal only.
+6. **Agent Stream Endpoint (`src/agent/agentStreamHandler.ts`, M-08, PR #34):** `POST /internal/agent/stream` with body `{"message": "…"}` (1–1000 characters, no other key) and identity from `X-Authenticated-Student-Id` / `X-Authenticated-User-Role` (API Contract v1.1 §3.3, §8 Q4). Before the stream: `400 INVALID_PARAMS` for a bad body, `503 AGENT_UNAVAILABLE` when no `GEMINI_API_KEY` is set (the endpoint never falls back to the fake provider), both as JSON in the §3.4 shape. Then `200 text/event-stream; charset=utf-8` with `Cache-Control: no-cache` and the frames `tool` (once per executed tool), `token`, one `done`, or one `error`; a failure after the headers is an `error` event. If the client closes the connection, the provider call is cancelled with an `AbortSignal`. The endpoint does not authenticate; the gateway does, and the port is internal only.
 7. **Known limitation (open gap):** the JSON block of a tool result uses `"type":"json"`, which is not a standard MCP content type. The gateway and API Contract §4 rely on it, but a standard MCP client such as the MCP Inspector rejects `tools/call` results (`tools/list` works). A backward-compatible `text` block is planned after the demo.
+8. **Network requirement (deployment finding, 22 Nov 2026):** the agent calls the Gemini API over HTTPS, so the `mcp-server` container needs outbound internet access. With `compose.yaml` as on `dev`, `mcp-server` is only on the `internal` network (`internal: true`), which has no route out: the first chat request of the four-service run ended with an `error` event (`Gemini request failed: TypeError`, DNS error `EAI_AGAIN`). A second plain bridge network used only by `mcp-server` fixes it; with it `web` still cannot reach `mcp-server` or `redis` (tested). The change is in `compose.yaml` (Sefa) and has been requested.
 
 ##### Implementation Status (Murat)
 
 | Subsystem | FR / NFR | Phase 2 Skeleton Status | PA3 Status (21 Nov 2026) |
 | :--- | :--- | :--- | :--- |
 | **MCP Tool Registry** | FR-01 | **Implemented:** Strict JSON & Zod schemas with `additionalProperties: false`. | Schema discovery via live frontend widgets. |
-| **Transports (HTTP & Stdio)** | FR-02 | **Implemented:** `StdioServerTransport`, `SSEServerTransport` (legacy HTTP+SSE), custom `POST /mcp`, `/health` endpoint. | **Partial:** stdio, `POST /mcp` and `tools/list` over SSE verified with the MCP Inspector; SSE session fix in an open PR; `tools/call` through standard MCP clients is an open gap; Streamable HTTP not implemented. |
+| **Transports (HTTP & Stdio)** | FR-02 | **Implemented:** `StdioServerTransport`, `SSEServerTransport` (legacy HTTP+SSE), custom `POST /mcp`, `/health` endpoint. | **Partial:** stdio, `POST /mcp` and `tools/list` over SSE verified with the MCP Inspector; SSE session fixed (PR #36); `tools/call` through standard MCP clients is an open gap; Streamable HTTP not implemented. |
 | **Tool Dispatcher** | FR-01, FR-06 | **Implemented:** Pipeline, `-32602` error handling, auth guard. | **Implemented:** connected to `packages/connectors` (M-02, PR #26). |
 | **Sample Mocks** | FR-03–06 | **Implemented:** Deterministic mock handlers in `apps/mcp-server`. | **Superseded** by Arda's connector package (M-02); kept as an opt-in test fixture only. |
-| **AI Agent Orchestrator** | FR-13 | **Implemented:** TypeScript interfaces, skeleton class. | **Partial:** loop, `GeminiProvider` and `FakeProvider` merged (PR #29); stream endpoint (PR #34) and Gemini 3 fix (PR #35) open; run against real Gemini only directly, not through the stream endpoint. |
+| **AI Agent Orchestrator** | FR-13 | **Implemented:** TypeScript interfaces, skeleton class. | **Implemented** (code): loop, `GeminiProvider`, `FakeProvider`, stream endpoint, Gemini 3 fix and tool log merged (PR #29, #34, #35, #39). One real-Gemini curl run through the gateway in Compose on 22 Nov; **not yet run in the browser** by the QA owner. |
 | **Prompt PII Scrubber** | FR-14 | **Planned:** Architectural boundary defined. | **Implemented** (PR #29): scrubbing, fail-closed check and redacted outbound log. |
 
 ---
@@ -370,7 +377,7 @@ The presentation tier hosts the user-facing web client and lightweight determini
 
 1. **Dual-View UX Strategy:**
    - *Campus at a Glance Dashboard:* Renders **three** responsive cards (Cafeteria, Shuttles, Library) loaded concurrently through the gateway without LLM latency (FR-18). The fourth card of the PA2 design (Service Health / connector telemetry) is **not implemented in PA3**: API Contract v1.1 defines no gateway endpoint for it and AT-01..AT-04 do not cover it. `checkConnectorHealth()` remains available in `packages/connectors` for later use.
-   - *Conversational Assistant:* Renders streaming responses over SSE, displaying one status/duration badge per invoked tool (FR-17) and resilient error notices (FR-19). *PA3 status: the stream client is implemented; the chat screen is planned (Y-07).*
+   - *Conversational Assistant:* Renders streaming responses over SSE, displaying one status/duration badge per invoked tool (FR-17) and resilient error notices (FR-19). *PA3 status: the stream client and the chat screen with one badge per tool are implemented (Y-07, Y-08, PR #32).*
 2. **Bilingual Deterministic Intent Router (FR-16):** Implemented in `apps/web/src/router/routeStudentQuery.ts`. Evaluates natural language queries without network or LLM dependencies:
    - *Step 1:* Normalizes Unicode diacritics, Turkish characters (ç, ğ, ı, ö, ş, ü), case, and whitespace.
    - *Step 2:* If empty, routes to `LLM_AGENT (EMPTY_QUERY)`.
@@ -390,7 +397,7 @@ The presentation tier hosts the user-facing web client and lightweight determini
 | **Intent Router** | FR-16 | **Implemented:** Deterministic regex classification algorithm. | Telemetry tracking for misclassifications. |
 | **Shared Tool Mapping** | FR-16 | **Implemented:** Binds directly to `packages/shared`. | Direct UI widget auto-triggering. |
 | **Dashboard UI** | FR-18 | **Planned:** Low-fidelity SVG wireframe defined. | **Implemented (PA3):** three cards, gateway client, fixture mode. |
-| **SSE Chat Stream** | FR-17, FR-19 | **Planned:** State model & retry backoff designed. | **Client implemented (PA3):** `fetch()` stream + incremental SSE parser, no automatic reconnect. Chat screen **planned** (Y-07). |
+| **SSE Chat Stream** | FR-17, FR-19 | **Planned:** State model & retry backoff designed. | **Client implemented (PA3):** `fetch()` stream + incremental SSE parser, no automatic reconnect. Chat screen **implemented** (Y-07, Y-08, PR #32). |
 | **Login / Sign-out** | FR-15 | — | **Implemented (PA3):** mock-SSO login with two synthetic personas, `sessionStorage` session, sign-out. |
 
 ---
@@ -407,9 +414,13 @@ The connector tier wraps campus services, enforcing caching and failure isolatio
    - *Shuttle (FR-04):* Generates chronological future departure slots strictly greater than current system time (second precision); returns active vehicle counts.
    - *Library (FR-05):* Generates floor-level seat counts conforming to hourly bell curves with `isSimulated: true`; floor sums strictly equal total occupancy.
    - *Course Schedule (FR-06):* Binds synthetic schedules to `auth.studentId`. Every student is assigned BIL 481 (Tue 08:30–10:20, Thu 13:30–15:20) ensuring consistent demonstration conditions.
-3. **Multi-Tiered TTL Caching (FR-09):** Implements cache-aside via `CacheStore` (`InMemoryCacheStore` for tests; `RedisCacheStore` for production). Values are cached for standard TTLs (Dining: 3600s, Shuttle: 120s, Library: 60s, Schedule: 300s) and physically retained for **3 × TTL** to serve as stale fallback data.
+3. **Multi-Tiered TTL Caching (FR-09):** Implements cache-aside via `CacheStore` (`InMemoryCacheStore` for tests and offline development; `RedisCacheStore` over the official `redis` client for the deployed stack, selected by `REDIS_URL`, item 6). Values are cached for standard TTLs (Dining: 3600s, Shuttle: 120s, Library: 60s, Schedule: 300s) and physically retained for **3 × TTL** to serve as stale fallback data.
 4. **Stale-If-Error Fallback (FR-10):** Upstream queries enforce an **800 ms timeout** (`UPSTREAM_TIMEOUT_MS`). Upon timeout, connector error, or circuit trip, the executor returns the retained expired cache entry marked with `isStale: true` and the original `timestamp`. If no cache exists, a structured error is returned.
 5. **Connector-Level Circuit Breaking (FR-11):** An isolated `CircuitBreaker` protects each connector. Tripping threshold: 3 consecutive failures; cooldown: 60,000 ms. While open, calls immediately return stale cache or error without generating network traffic. A single probe request is permitted in half-open state.
+6. **Redis Runtime (`src/cache/redisClient.ts`, A-02):** `createCacheStoreFromEnv()` waits for Redis and fails fast; `createCacheStoreFromEnvSync()` (used by the MCP server) connects in the background. Rule: `REDIS_URL` set → shared Redis; unset → in-memory store with a warning on stderr, except under `NODE_ENV=production`, where the process refuses to start (`ConnectorConfigError`). Commands are not queued while Redis is unreachable and every cache operation is limited to 200 ms, so an outage turns a read into a miss and skips the write instead of consuming the 800 ms upstream budget; the client reconnects in the background (back-off up to 2 s); logs never contain the password part of the URL. Arda ran the Redis tests against a real Redis 7.0 in a separate Linux environment; Murat saw it working in the four-service Compose stack on 22 Nov 2026 (`connector.cache` "ready", keys `cache:dining:<date>`, `cache:schedule:<hash>:<day>` and `cache:shuttle:<route>`, a repeated request answered `CACHE_HIT`).
+7. **Test Clock (`src/clock.ts`, API Contract v1.1 §8 Q3):** `CONNECTOR_FIXED_NOW` (ISO-8601 with an explicit offset, for example `2026-11-23T09:00:00+03:00`) sets the instant at which the connector clock *starts*; it then advances in real time, so TTL freshness, the 3 × TTL retention, the 60 s circuit cooldown and `durationMs` still behave (a frozen clock would keep cached data fresh forever). Unset: real time. An invalid or offset-less value stops the server at startup. A clock injected by unit tests always wins.
+8. **Response Metadata (`src/handlers.ts`, A-06, API Contract v1.1 §3.2):** every successful tool result carries `source` (`LIVE`, `CACHE_HIT` or `STALE`, never `MOCK`), `isSimulated`, `isStale`, `timestamp` (when the data was fetched; the original time for stale data) and `durationMs` inside the `content[0]` JSON block of the MCP result, because the MCP HTTP path forwards only `content`, `isError`, `isStale` and `timestamp`. The provenance stored with a cached value wins, so mock data stays labelled synthetic even when it is served stale after a switch to live mode.
+9. **Execution Log and Privacy (`src/logging.ts`, `src/cache/cacheKeys.ts`, A-04, A-07):** each `ResilientConnectorExecutor.execute()` writes one JSON line to stderr (`event: connector.execute`, `at`, `connector`, `outcome`, `upstreamCalled`, `cacheKey`, `durationMs`, optional `failureCode`, `circuitState`); stdout stays free for the MCP stdio transport. Acceptance runs count executions from these lines (AC-01.7, AC-02.7, AC-03.6). A line never contains tool arguments, the auth context or a student id; course-schedule cache keys use a SHA-256 prefix of the id (`cache:schedule:<hash>:<day>`), so Redis key listings hold no personal data and two students never share an entry.
 
 ```mermaid
 sequenceDiagram
@@ -451,13 +462,18 @@ sequenceDiagram
 
 ##### Implementation Status (Arda)
 
-| Subsystem | FR / NFR | Phase 2 Skeleton Status (**Implemented**) | Phase 3 Core Development Status (**Planned**) |
+| Subsystem | FR / NFR | Phase 2 Skeleton Status | PA3 Status (22 Nov 2026) |
 | :--- | :--- | :--- | :--- |
-| **Connector Contracts** | FR-12 | **Implemented:** `ManagedCampusConnector` & factory. | Live scraping adapter for cafeteria menu. |
-| **Deterministic Mocks** | FR-03–06 | **Implemented:** Seeded PRNG mock generators. | Maintained for air-gapped CI/CD. |
-| **TTL Cache-Aside** | FR-09 | **Implemented:** `InMemoryCacheStore` & Redis adapter. | Live Redis container wiring in Docker. |
-| **Stale-If-Error** | FR-10 | **Implemented:** 800ms timeout & 3×TTL fallback. | Telemetry capture of stale events. |
-| **Circuit Breakers** | FR-11 | **Implemented:** State machine, 3-fail threshold, 60s cooldown. | Production dashboard circuit state gauge. |
+| **Connector Contracts** | FR-12 | **Implemented:** `ManagedCampusConnector` & factory. | **Implemented.** Mock versus unavailable-live semantics are documented in `packages/connectors/README.md` (live mode has no confirmed upstream and returns `UPSTREAM_UNAVAILABLE`). |
+| **Deterministic Mocks** | FR-03–06 | **Implemented:** Seeded PRNG mock generators. | **Implemented**; the clock can be pinned with `CONNECTOR_FIXED_NOW` for reproducible acceptance runs. |
+| **TTL Cache-Aside** | FR-09 | **Implemented:** `InMemoryCacheStore` & Redis adapter. | **Implemented**; Redis runtime merged (PR #31) and seen working in the four-service Compose stack on 22 Nov (Murat). |
+| **Stale-If-Error** | FR-10 | **Implemented:** 800ms timeout & 3×TTL fallback. | **Implemented**; each stale or failed call is logged with its `outcome` and `failureCode`. |
+| **Circuit Breakers** | FR-11 | **Implemented:** State machine, 3-fail threshold, 60s cooldown. | **Implemented**; the breaker state is part of every execution log line (`circuitState`). A dashboard gauge is not planned for PA3. |
+| **Redis Runtime** | FR-09, NFR-04 | — (not in the skeleton) | **Implemented** (A-02, PR #31): chosen by `REDIS_URL`, bounded operations, background reconnect. Verified against a real Redis 7.0 (Arda) and in the Compose stack (Murat). |
+| **Test Clock** | AC-02.5, AC-03.7 | — | **Implemented** (Q3): `CONNECTOR_FIXED_NOW`, advancing clock. |
+| **Response Metadata** | FR-12, API Contract §3.2 | — | **Implemented** (A-06): five metadata fields in the MCP JSON block. |
+| **Execution Log** | AC-01.7, AC-02.7, AC-03.6 | — | **Implemented** (A-04): one JSON line per call, no arguments or student id. |
+| **Measurements** | NFR-01, NFR-02 | — | **Connector tier measured by simulation** (hit ratio 98.7 %, cache-path p95 well below 1 ms; Arda). End-to-end p95 and hit ratio: **not run**. |
 
 ---
 
@@ -472,29 +488,33 @@ The API Gateway acts as the zero-trust perimeter security enforcement tier:
    - Deletes the raw `Authorization` header (`delete req.headers['authorization']`).
    - Strips any inbound `X-Authenticated-*` headers to defeat header spoofing attacks.
    - Injects verified internal headers: `X-Authenticated-Student-Id: <claims.sub>` and `X-Authenticated-User-Role: <claims.role>`.
-3. **Sliding-Window Rate Limiting Engine (FR-08):** In the current Phase 2 implementation, rate limiting is executed via an in-memory sliding-window store (`InMemoryRateLimiterStore` in `apps/api-gateway/src/rate-limiter/slidingWindowRateLimiter.ts`). The store tracks millisecond-precision request timestamps per key within Node.js process memory, ensuring deterministic behavior for automated testing and air-gapped CI without external infrastructure dependencies. Transitioning to a distributed, Redis-based atomic sliding-window rate limiter (using Redis sorted sets and Lua scripts) is planned for Phase 3 containerization:
+3. **Sliding-Window Rate Limiting Engine (FR-08):** rate limiting runs as a second `preHandler` hook after token termination; `/health` is exempt. The store is chosen from the environment (`createRateLimiterStoreFromEnv`): with `REDIS_URL` set, `RedisRateLimiterStore` (sorted-set sliding window over a dependency-free RESP client, `RespTcpRedisClient`) is shared by all gateway instances; without it, `InMemoryRateLimiterStore` is used. If Redis fails, the Redis store falls back to an in-memory store (fail open) rather than rejecting users. Verified in the three-service Compose stack (30 requests accepted, the 31st answered `429 RATE_LIMITED`; evidence `docs/assignment3/evidence/deployment/`):
    - Partition keys: `rate:student:<studentId>` for authenticated users; `rate:ip:<clientIp>` for guests.
    - Sliding window: 60 seconds; ceiling: 30 requests per minute.
    - Rejections return HTTP `429 Too Many Requests` with a standard `Retry-After: <seconds>` header.
+4. **Endpoints (`src/server.ts`):** `GET /health`; `POST /api/v1/auth/mock-login` (validates `{studentId, name, email, role?}`, issues an HS256 JWT valid for 3600 s); `GET /api/v1/auth/me`; `POST /api/v1/query`; `POST /api/v1/chat/stream`. The gateway sends no CORS headers: the browser reaches it through the Next.js rewrite of `/api/v1/*` (API Contract v1.1 Q5).
+5. **Query Proxy (`src/proxy/mcpProxy.ts`, S-01):** sends a JSON-RPC 2.0 `tools/call` to `MCP_URL`. It rejects `studentId`, `student_id` or `userId` in `parameters` with `400 INVALID_PARAMS` even for an authenticated user, rejects a guest `get_course_schedule` with `401` before calling the MCP server, rejects empty `{}` domain payloads (an empty `[]` is valid for the course schedule) and preserves `meta.source`, `meta.isSimulated`, `meta.isStale`, `meta.timestamp` and `meta.durationMs`.
+6. **Chat Stream Proxy (`src/proxy/chatStreamProxy.ts`, S-03):** requires a verified student JWT on every request; validates `message` (1–1000 characters) and forbids identity fields in the body; posts `{"message": "…"}` to `AGENT_STREAM_URL` with the verified `X-Authenticated-*` headers (never `Authorization`) and passes the SSE frames through unchanged. Before the stream, upstream failures map to JSON (`503 UPSTREAM_UNAVAILABLE`, `429 RATE_LIMITED` with `Retry-After`, `504 UPSTREAM_TIMEOUT` after 20 s, `502 DOWNSTREAM_ERROR`); after the headers a failure becomes a safe `error` event (`AGENT_ERROR`). It never retries (API Contract v1.1 §3.3).
+7. **Errors and Secrets (`src/http/errorResponse.ts`, `src/auth/jwtVerifier.ts`):** browser-facing errors use `{"ok":false,"error":{"code","message"},"timestamp"}` with the codes `INVALID_PARAMS`, `AUTHENTICATION_REQUIRED`, `RATE_LIMITED`, `UPSTREAM_UNAVAILABLE`, `DOWNSTREAM_ERROR`, `UPSTREAM_TIMEOUT` and `INTERNAL_ERROR` (API Contract v1.1 §3.4). JWT verification accepts only HS256, compares the signature in constant time and checks `sub`, `role`, `exp` and the issuer (`MOCK_SSO_ISSUER`); `JWT_SECRET` is required when `NODE_ENV=production`.
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Client as Web Client / Student
     participant Gateway as Fastify API Gateway
-    participant Limiter as Rate Limiter (InMemoryStore / Phase 3: Redis)
+    participant Limiter as Rate Limiter (Redis store, in-memory fallback)
     participant MCP as MCP Middleware Server
     participant SIS as SIS Schedule Connector
 
     Client->>Gateway: POST /api/v1/query (Authorization: Bearer <JWT>)
     Gateway->>Gateway: 1. Validate JWT signature, expiry & issuer
     alt Invalid or Expired Token
-        Gateway-->>Client: 401 Unauthorized ({ "error": "Invalid or expired token" })
+        Gateway-->>Client: 401 AUTHENTICATION_REQUIRED ({ "ok": false, "error": { "code", "message" }, "timestamp" })
     else Valid Token (Student ID: 241101066)
         Gateway->>Gateway: 2. Strip raw Authorization & spoofed X-Authenticated-* headers
         Gateway->>Limiter: 3. Check sliding-window rate limit (rate:student:241101066)
         alt Rate Limit Exceeded (> 30 req/min)
-            Gateway-->>Client: 429 Too Many Requests ({ "retryAfter": 18 })
+            Gateway-->>Client: 429 RATE_LIMITED (Retry-After header, §3.4 error body)
         else Allowed
             Gateway->>Gateway: 4. Inject verified X-Authenticated-Student-Id: 241101066
             Gateway->>MCP: 5. Forward request over internal HTTP (/mcp) with sanitized headers
@@ -508,12 +528,15 @@ sequenceDiagram
 
 ##### Implementation Status (Sefa)
 
-| Subsystem | FR / NFR | Phase 2 Skeleton Status (**Implemented**) | Phase 3 Core Development Status (**Planned**) |
+| Subsystem | FR / NFR | Phase 2 Skeleton Status | PA3 Status (22 Nov 2026) |
 | :--- | :--- | :--- | :--- |
-| **Fastify Gateway** | FR-07 | **Implemented:** Server skeleton, CORS, health probe. | Reverse proxy pipe (`@fastify/http-proxy`) to MCP. |
-| **JWT Verification** | FR-07 | **Implemented:** Mock SSO signer and token verifier. | Public-key rotation endpoint. |
-| **Token Termination** | FR-07 | **Implemented:** Header stripping and verified context injection. | Production audit logging integration. |
-| **Rate Limiter** | FR-08 | **Implemented:** In-memory sliding-window store for tests. | Production Redis cluster client integration. |
+| **Fastify Gateway** | FR-07 | **Implemented:** Server skeleton, CORS, health probe. | **Implemented**: real HTTP proxies to the MCP server and the agent; no CORS headers (Next.js rewrite). Verified in the three-service Compose stack (web, gateway, Redis). |
+| **JWT Verification** | FR-07 | **Implemented:** Mock SSO signer and token verifier. | **Implemented**; `JWT_SECRET` required in production. A public-key rotation endpoint is not planned. |
+| **Token Termination** | FR-07 | **Implemented:** Header stripping and verified context injection. | **Implemented**; client-supplied `X-Authenticated-*` headers are removed and the raw `Authorization` header is never forwarded. |
+| **Rate Limiter** | FR-08 | **Implemented:** In-memory sliding-window store for tests. | **Implemented**: Redis store with in-memory fallback; 31st request in a minute answered `429` in the Compose stack. |
+| **Query Proxy** | FR-06, FR-07 | — (not in the skeleton) | **Implemented** (S-01): JSON-RPC proxy to `MCP_URL`, identity parameters rejected, metadata preserved. |
+| **Chat Stream Proxy** | FR-17 | — | **Implemented** (S-03): SSE pass-through to `AGENT_STREAM_URL`; the chain gateway → agent → Gemini was exercised with curl in Compose on 22 Nov; not yet in the browser. |
+| **Error Envelope** | API Contract §3.4 | — | **Implemented** (`sendGatewayError`). |
 
 ---
 
@@ -703,7 +726,7 @@ export class AgentOrchestrator implements IAgentOrchestrator {
 export interface LlmFunctionCall {
   name: string;
   args: Record<string, unknown>;
-  thoughtSignature?: string;   // Gemini 3: must be sent back unchanged (PR #35)
+  thoughtSignature?: string;   // Gemini 3: must be sent back unchanged
 }
 
 export interface LlmProvider {
@@ -716,13 +739,28 @@ export interface LlmProvider {
 export function createGeminiProviderFromEnv(env?: Record<string, string | undefined>): GeminiProvider | undefined;
 // returns undefined without a usable GEMINI_API_KEY; callers never substitute a fake
 
-// apps/mcp-server/src/agent/agentStreamHandler.ts (PR #34, open)
+// apps/mcp-server/src/agent/agentStreamHandler.ts
 export interface AgentStreamHandlerOptions {
   dispatcher: ToolDispatcher;
   provider?: LlmProvider;      // undefined: the endpoint answers 503 AGENT_UNAVAILABLE
   outboundLog?: OutboundLog;
 }
 export function createAgentStreamHandler(options: AgentStreamHandlerOptions): AgentStreamHandler;
+
+// apps/mcp-server/src/agent/outboundLog.ts
+export interface ToolCallLogEntry {
+  event: 'tool_call';          // provider request entries have no `event` field
+  timestamp: string;
+  round: number;               // provider round in which the model asked for the tool
+  toolName: string;
+  arguments: Record<string, unknown>;   // as dispatched: identity keys removed, values scrubbed
+  status: 'CACHE_HIT' | 'LIVE' | 'STALE' | 'ERROR';
+  durationMs: number;
+}
+export interface OutboundLog {
+  record(entry: OutboundLogEntry): void;
+  recordToolCall?(entry: ToolCallLogEntry): void;
+}
 ```
 
 ---
@@ -804,7 +842,7 @@ flowchart TB
     QB[QueryBox] --> R[routeStudentQuery]
     D[Dashboard] --> MC[MenuCard] & SC[ShuttleCard] & LC[LibraryCard]
     MC & SC & LC --> UQ[useToolQuery] --> GC[gateway client]
-    AV[AssistantView] -. planned Y-07 .-> CC[chat stream client]
+    AV[AssistantView] -- "chat screen (Y-07)" --> CC[chat stream client]
     SP[SessionProvider] --> AC[auth client]
     H[SiteHeader] --> SP
     AV --> SP
@@ -869,8 +907,40 @@ export class CircuitBreaker {
 }
 
 export class ResilientConnectorExecutor {
-  constructor(options: { cache: CacheStore; clock?: Clock; timeoutMs?: number; retentionMultiplier?: number });
+  constructor(options: { cache: CacheStore; clock?: Clock; timeoutMs?: number; retentionMultiplier?: number; onEvent?: ConnectorEventSink });
   execute<TInput, TOutput>(request: ResilientExecuteRequest<TInput, TOutput>): Promise<ResilientResult<TOutput>>;
+}
+
+// packages/connectors/src/runtime.ts
+export interface ConnectorRuntimeOptions {
+  env?: EnvSource; cache?: CacheStore; clock?: Clock;
+  onEvent?: ConnectorEventSink;                 // execution log sink, default JSON lines on stderr
+  onCacheWarning?: (line: string) => void;      // cache backend warnings, default stderr
+}
+export interface ConnectorRuntime extends ConnectorHandlerDeps {
+  config: ConnectorRuntimeConfig; cache: CacheStore; clock: Clock;
+  cacheBackend: string;                          // 'redis', 'memory' or 'custom'
+  close(): Promise<void>;
+}
+export function createConnectorRuntime(options?: ConnectorRuntimeOptions): ConnectorRuntime;          // Redis connects in the background
+export function createConnectorRuntimeFromEnv(options?: Omit<ConnectorRuntimeOptions, 'cache'>): Promise<ConnectorRuntime>;  // waits, fails fast
+
+// packages/connectors/src/handlers.ts
+export interface ConnectorResponseMeta {
+  source: 'LIVE' | 'CACHE_HIT' | 'STALE';        // never 'MOCK'
+  isSimulated: boolean; isStale: boolean;
+  timestamp: string; durationMs: number;
+}
+
+// packages/connectors/src/clock.ts
+export function resolveConnectorClock(fixedNowIso: string | null): Clock;   // CONNECTOR_FIXED_NOW
+
+// packages/connectors/src/logging.ts
+export interface ConnectorExecutionEvent {
+  event: 'connector.execute'; at: string; connector: ConnectorName;
+  outcome: 'CACHE_HIT' | 'LIVE' | 'STALE' | 'ERROR';
+  upstreamCalled: boolean; cacheKey: string; durationMs: number;
+  failureCode?: string; circuitState: CircuitState;   // never arguments, auth context or a student id
 }
 ```
 
@@ -901,9 +971,30 @@ export interface AuthenticatedRequestContext {
 }
 
 // apps/api-gateway/src/server.ts
+export interface BuildGatewayOptions {
+  rateLimiterStore?: RateLimiterStore;
+  rateLimit?: number;          // default 30
+  rateLimitWindow?: number;    // seconds, default 60
+  mcpUrl?: string;             // default MCP_URL
+  agentStreamUrl?: string;     // default AGENT_STREAM_URL
+  mcpTimeoutMs?: number;       // default 10 000
+  chatTimeoutMs?: number;      // default 20 000
+  fetchImpl?: typeof fetch;
+}
 export function buildGateway(options?: BuildGatewayOptions): FastifyInstance;
 export function authenticateAndTerminateToken(request: FastifyRequest, reply: FastifyReply): Promise<void>;
-export function createRateLimiterMiddleware(limit?: number, windowSeconds?: number): (req: FastifyRequest, reply: FastifyReply) => Promise<void>;
+export function createRateLimiterMiddleware(limit?: number, windowSeconds?: number, store?: RateLimiterStore): (req: FastifyRequest, reply: FastifyReply) => Promise<void>;
+
+// apps/api-gateway/src/http/errorResponse.ts (API Contract v1.1 §3.4)
+export type GatewayErrorCode = 'INVALID_PARAMS' | 'AUTHENTICATION_REQUIRED' | 'RATE_LIMITED'
+  | 'UPSTREAM_UNAVAILABLE' | 'DOWNSTREAM_ERROR' | 'UPSTREAM_TIMEOUT' | 'INTERNAL_ERROR';
+export function sendGatewayError(reply: FastifyReply, statusCode: number, code: GatewayErrorCode, message: string, headers?: Record<string, string>): FastifyReply;
+
+// apps/api-gateway/src/rate-limiter/redisRateLimiterStore.ts
+export function createRateLimiterStoreFromEnv(env?: NodeJS.ProcessEnv, options?: { failOpen?: boolean; timeoutMs?: number }): RateLimiterFactoryResult;
+
+// apps/api-gateway/src/proxy/chatStreamProxy.ts
+export async function handleChatStream(request: FastifyRequest, reply: FastifyReply, options: ChatStreamProxyOptions): Promise<void>;
 ```
 
 ---
@@ -992,7 +1083,7 @@ The assistant provides full operational transparency into the agentic reasoning 
   - Blue banner for synthetic stubs: *"Simulated library turnstile feed"*.
   - ~~Reconnecting banner with retry countdowns during SSE drops (FR-19).~~ **Superseded in PA3:** when the stream drops, the partial answer is kept and an explicit "Tekrar dene" (retry) action is offered; there is **no automatic reconnect** (see §3.5, API Contract v1.1 §3.3).
 - **Draft Preservation:** Typed input is never cleared during query retries.
-- *PA3 status:* the assistant page exists; the streamed chat screen with badges is planned (Y-07) on top of the implemented stream client.
+- *PA3 status:* the assistant page exists; the streamed chat screen with one badge per tool (Y-07, PR #32) is built on the implemented stream client.
 
 #### 2.4.3 Responsive Viewport Compatibility (NFR-07)
 
@@ -1002,7 +1093,7 @@ The assistant provides full operational transparency into the agentic reasoning 
 | **Tablet Displays** | 768 px – 1023 px | 2-column dashboard card grid; tabbed navigation between Dashboard and Conversational views. |
 | **Desktop Displays**| 1024 px – 1920 px| 2-column dashboard grid; persistent side-by-side assistant view on wide displays (>1440px) without horizontal scrolling. |
 
-*PA3 status (NFR-07):* the implemented client uses separate dashboard and assistant pages and a responsive card grid. It has been checked at 375 px and on desktop in Chrome with no horizontal scrolling; 768 px, 1440 px and other browsers are not checked yet (Y-10).
+*PA3 status (NFR-07):* the implemented client uses separate dashboard and assistant pages and a responsive card grid. It has been checked at 375 px and on desktop in Chrome with no horizontal scrolling; 768, 1440 and 1920 px were also checked in Chromium and Firefox visually (Y-10; evidence `docs/assignment3/evidence/y10-responsive/`, `handovers/yunus.md`); Safari was checked by Arda in the PR #33 discussion.
 
 ---
 
@@ -1186,8 +1277,9 @@ sequenceDiagram
   - *Slow LLM Response (> 5s):* UI displays "Still processing..." notice when no answer text has arrived after 5 s; the request is cancelled with a retry option after **20 s without any data** (idle timeout), so a long answer that keeps streaming is not cut off.
   - *SSE Connection Drop (design decision revised in PA3):* the partial answer and the typed draft are kept, the turn ends with `STREAM_INTERRUPTED`, and the user retries explicitly with "Tekrar dene" (retry). There is **no automatic reconnect or resend**, because without server-side replay a reconnect would run the tool chain a second time (API Contract v1.1 §3.3). This replaces the PA2 rule "automatic retry with backoff (1s, 2s, 4s)" (FR-19).
   - *Agent not configured (no `GEMINI_API_KEY`) (PA3):* the agent endpoint answers `503` JSON before any stream starts; the gateway maps it to its own `503 UPSTREAM_UNAVAILABLE` and the UI shows an error with a retry option. The system never answers with fake data in this case.
-  - *Provider failure after the stream started (PA3):* the agent emits one `error` event with a fixed safe message (no tokens, PII or stack trace) instead of `done`; the user retries explicitly. Transient provider overload (429/5xx) is retried twice inside the provider before this happens (PR #35, open).
-  - *Real-run status (PA3, honest limit):* the real Gemini provider was run directly on the agent and answered a compound question from three tool results; the full chain through gateway and UI has not been run, so AT-04 and AC-04.11 are not satisfied yet.
+  - *Provider failure after the stream started (PA3):* the agent emits one `error` event with a fixed safe message (no tokens, PII or stack trace) instead of `done`; the user retries explicitly. Transient provider overload (429/5xx) is retried twice inside the provider before this happens.
+  - *Agent cannot reach the provider (PA3, deployment finding):* in the four-service Compose stack with `compose.yaml` as on `dev`, the `mcp-server` container has no route to the Gemini API and the chat ends with an `error` event (section 2.2.1 item 8). A network used only by `mcp-server` fixes it.
+  - *Real-run status (PA3, honest limit):* on 22 Nov 2026 a curl request through the gateway in the four-service Compose stack, with the real Gemini provider and Redis, returned three `tool` events, `token` events and one `done` event (evidence: `docs/assignment3/evidence/AT-04/gateway-agent-gemini-compose-smoke.txt`, PR #41). It was not run in the browser or by the QA owner, so AT-04 and AC-04.11 are not satisfied formally.
 
 ```mermaid
 sequenceDiagram
@@ -1321,7 +1413,7 @@ In compliance with the BIL 481 Project Assignment 2 guidelines, all design decis
   - Tool Registry & Schemas: [`apps/mcp-server/src/registry/toolDefinitions.ts`](../apps/mcp-server/src/registry/toolDefinitions.ts)
   - Tool Dispatcher Engine: [`apps/mcp-server/src/dispatcher/ToolDispatcher.ts`](../apps/mcp-server/src/dispatcher/ToolDispatcher.ts)
   - Server & SSE Handlers: [`apps/mcp-server/src/server.ts`](../apps/mcp-server/src/server.ts)
-  - AI Agent: [`apps/mcp-server/src/agent/`](../apps/mcp-server/src/agent/) — [`AgentOrchestrator.ts`](../apps/mcp-server/src/agent/AgentOrchestrator.ts), [`LlmProvider.ts`](../apps/mcp-server/src/agent/LlmProvider.ts), [`GeminiProvider.ts`](../apps/mcp-server/src/agent/GeminiProvider.ts), [`FakeProvider.ts`](../apps/mcp-server/src/agent/FakeProvider.ts), [`piiScrubber.ts`](../apps/mcp-server/src/agent/piiScrubber.ts), [`outboundLog.ts`](../apps/mcp-server/src/agent/outboundLog.ts); stream endpoint `agentStreamHandler.ts` (PR #34, open)
+  - AI Agent: [`apps/mcp-server/src/agent/`](../apps/mcp-server/src/agent/) — [`AgentOrchestrator.ts`](../apps/mcp-server/src/agent/AgentOrchestrator.ts), [`LlmProvider.ts`](../apps/mcp-server/src/agent/LlmProvider.ts), [`GeminiProvider.ts`](../apps/mcp-server/src/agent/GeminiProvider.ts), [`FakeProvider.ts`](../apps/mcp-server/src/agent/FakeProvider.ts), [`piiScrubber.ts`](../apps/mcp-server/src/agent/piiScrubber.ts), [`outboundLog.ts`](../apps/mcp-server/src/agent/outboundLog.ts); stream endpoint [`agentStreamHandler.ts`](../apps/mcp-server/src/agent/agentStreamHandler.ts)
   - Sample Mocks (opt-in test fixture only since M-02): [`apps/mcp-server/src/mocks/sampleMockHandlers.ts`](../apps/mcp-server/src/mocks/sampleMockHandlers.ts)
 - **Web Client & Bilingual Intent Router:** [`apps/web/src/index.ts`](../apps/web/src/index.ts)
   - Deterministic Intent Router: [`apps/web/src/router/routeStudentQuery.ts`](../apps/web/src/router/routeStudentQuery.ts)
@@ -1352,12 +1444,12 @@ In compliance with the BIL 481 Project Assignment 2 guidelines, all design decis
 The repository contains a 100% offline-executable, zero-network test suite executed via Vitest (`npm test` / `vitest run`), validating all contracts, mock flows, intent routing, and security boundaries in compliance with NFR-08:
 - **Connector test group (`tests/connectors/`):** [`tests/connectors/`](../tests/connectors/) (76 tests passing across 7 test files, covering mock connectors, cache stores, circuit breaker state machine, config parser, and resilient executor)
 - **Web intent router (`apps/web/tests/routeStudentQuery.test.ts`):** [`apps/web/tests/routeStudentQuery.test.ts`](../apps/web/tests/routeStudentQuery.test.ts) (45 tests passing, validating bilingual normalization and deterministic routing across 40 labeled queries)
-- **MCP server and agent (`tests/mcp-server/`):** [`tests/mcp-server/`](../tests/mcp-server/) (71 tests passing across 5 files on `dev` at `db57ed9`: dispatcher, HTTP connectors, agent orchestrator, Gemini provider with a stubbed `fetch`, PII scrubber). `agentStream.test.ts` (PR #34) and `sseTransport.test.ts` (open PR) are not on `dev` yet. These tests use stubs and the fake provider; they are not acceptance tests.
+- **MCP server and agent (`tests/mcp-server/`):** [`tests/mcp-server/`](../tests/mcp-server/) (95 tests in 7 files at the time of PR #39: dispatcher, HTTP connectors, agent orchestrator, agent stream, SSE transport, Gemini provider with a stubbed `fetch`, PII scrubber). These tests use stubs and the fake provider; they are not acceptance tests.
 - **API gateway (`apps/api-gateway/tests/jwtAuth.test.ts`):** [`apps/api-gateway/tests/jwtAuth.test.ts`](../apps/api-gateway/tests/jwtAuth.test.ts) (7 tests passing, verifying JWT verification, token stripping, header injection, and rate limiting)
 
 **Overall Test Suite Total:** **146 tests, 10 test files** (0 failures, completed in < 1s offline). *(PA2 baseline.)*
 
-**PA3 update:** `npx vitest run` on `dev` at `db57ed9` (21 Nov 2026, run by Murat Can Işık on Windows 11, Node.js v24, Vitest 5.1.0): **292 tests in 25 files, all passing**; 71 of them are in `tests/mcp-server/` (5 files). (At `6cc1d07` on 20 Nov 2026 the count was 230 tests in 20 files, 111 of them web tests.)
+**PA3 update:** `npx vitest run` on `dev` at `13b8fb8` (22 Nov 2026, run by Murat Can Işık on Windows 11, Node.js v24, Vitest 5.1.0): **365 tests passed, 8 skipped, in 33 files**. The 8 skipped tests are the real-Redis group of the connector tests (they need a Redis server; Arda ran them against Redis 7.0 in a separate Linux environment, see `handovers/arda.md` §7).
 
 ---
 
@@ -1392,7 +1484,7 @@ The task matrix below records the individual efforts contributed exclusively tow
 | :--- | :--- | :--- | :--- | :---: | :---: | :---: |
 | **TSK-DES-12** | Web client handover for the Design Document (Y-13) | Yunus Emre Biçer | Murat Can Işık (review, PR #21) | Not recorded | Not recorded | Completed |
 | **TSK-DES-13** | Update of the web client sections 1.2, 1.3, 2.1, 2.2.2, 2.3.3, 2.4, 3.2–3.6, 5; SSE reconnect decision (M-11) | Murat Can Işık | Source: Yunus Emre Biçer; reviewer: Yunus Emre Biçer | Not recorded | Not recorded | In review |
-| **TSK-DES-14** | Update of gateway, MCP/agent and connector sections (M-11) | Murat Can Işık | Sources: Murat (MCP/agent, done in Version 1.2), Sefa and Arda handovers (gateway, connectors: pending) | Not recorded | Not recorded | In progress (MCP/agent part in review; gateway and connector parts pending) |
+| **TSK-DES-14** | Update of gateway, MCP/agent and connector sections (M-11) | Murat Can Işık | Sources: Murat (MCP/agent), Sefa and Arda handovers (gateway, connectors; Version 1.3) | Not recorded | Not recorded | In review (Version 1.3); authors to confirm their sections |
 
 *Summary of Member Document Allocations:*
 - **Murat Can Işık:** Estimated 1.50 h | Actual: 1.00 h
