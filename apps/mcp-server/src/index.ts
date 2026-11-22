@@ -29,14 +29,18 @@ export interface McpServerStartOptions {
   agentOutboundLog?: OutboundLog;
 }
 
-/** Describes the connector tier for logs and /health. Redis is not wired yet (Arda A-02). */
+/**
+ * Describes the connector tier for logs and /health. `cache` is the configured backend
+ * (`redis`, `in-memory`, or `custom` for an injected store); it does not say whether Redis is
+ * reachable right now, the runtime logs `connector.cache` lines for that.
+ */
 function describeRuntime(runtime: ConnectorRuntime | undefined) {
   if (!runtime) {
     return { source: 'sample-mocks (deprecated)' };
   }
   return {
     source: 'connectors',
-    cache: 'in-memory',
+    cache: runtime.cacheBackend === 'memory' ? 'in-memory' : runtime.cacheBackend,
     redisUrlConfigured: Boolean(process.env.REDIS_URL),
     connectorModes: runtime.config.modes,
   };
@@ -298,11 +302,6 @@ export async function startHttpServer(
       console.log(`[MCP Server] Health check available at http://${host}:${port}/health`);
       console.log('[MCP Server] Runtime:', JSON.stringify(runtimeInfo));
       console.log(`[MCP Server] Agent stream: ${AGENT_STREAM_PATH} (provider: ${agentInfo.provider})`);
-      if (runtimeInfo.redisUrlConfigured) {
-        console.log(
-          '[MCP Server] REDIS_URL is set but the Redis client is not wired yet; using in-memory cache (BLOCKED: Arda A-02).'
-        );
-      }
       resolve(httpServer);
     });
 
