@@ -45,9 +45,13 @@ export const FAKE_TOOL_EVENTS = [
   { toolName: 'get_cafeteria_menu', status: 'LIVE', durationMs: 15 },
 ] as const;
 
+/** Written in the light Markdown the real model (Gemini) uses, so fixture mode shows the same formatting. */
 export const FAKE_ANSWER =
-  "10:30'daki BIL481 dersin 12:20'de bitiyor. Ana Ring'in sonraki seferi 12:30'da; durağa yürüyerek yetişebilirsin. " +
-  'Öğle menüsünde Mercimek Çorbası, Tavuk Sote ve Pirinç Pilavı var. (Örnek veri: sentetik ders, ring ve menü bilgisi.)';
+  "10:30'daki BIL481 dersin **12:20**'de bitiyor. Ana Ring'in sonraki seferi **12:30**'da; durağa yürüyerek yetişebilirsin.\n\n" +
+  'Öğle menüsünde Mercimek Çorbası, Tavuk Sote ve Pirinç Pilavı var:\n' +
+  '* **Çorba:** Mercimek Çorbası\n' +
+  '* **Ana yemek:** Tavuk Sote, yanında Pirinç Pilavı\n\n' +
+  '*Örnek veri: sentetik ders, ring ve menü bilgisi.*';
 
 export function createFakeChatTransport({
   scenario = 'success',
