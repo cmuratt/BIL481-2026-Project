@@ -1,0 +1,15 @@
+========================================================================
+Gateway Verification Harness — mode=smoke
+Executed at: 2026-11-22T16:39:48.950Z
+========================================================================
+[PASS] GATEWAY_HEALTH — HTTP 200 (api-gateway)
+[PASS] UC-01_PUBLIC_QUERY — source=LIVE, isSimulated=true
+[PASS] UC-02_PUBLIC_QUERY — route=MAIN_RING, source=CACHE_HIT
+[PASS] UC-02_INVALID_ROUTE — HTTP 400 INVALID_PARAMS
+[PASS] UC-03_PUBLIC_QUERY — source=CACHE_HIT, isStale=false
+[PASS] SEC_GUEST_COURSE_DENIED — HTTP 401 AUTHENTICATION_REQUIRED
+[PASS] SEC_GUEST_CHAT_DENIED — HTTP 401 AUTHENTICATION_REQUIRED
+[PASS] MOCK_LOGIN — token=eyJhbGci...<redacted>, studentId=demo-student-01
+[PASS] SEC_STUDENT_ID_INJECTION_BLOCKED — HTTP 400 INVALID_PARAMS
+[PASS] AUTH_COURSE_SCHEDULE — entries=2
+[PASS] UC-04_CHAT_SSE_STREAM — received 1886 bytes of SSE frames
