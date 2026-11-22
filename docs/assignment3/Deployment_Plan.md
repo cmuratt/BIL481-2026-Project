@@ -8,12 +8,12 @@
 | **Assignment** | Project Assignment 3 — Deliverable 1: Deployment Plan |
 | **Group Name** | Group-ASYM |
 | **Document Lead & Primary Author** | **Ahmet Sefa Efendioğlu** (241101066) — `@Sefa-Efendioglu` |
-| **Document Version / Date** | **Version 1.1 (Full 4-Service Compose, Live Gateway Smoke & Real Gemini E2E Verified), 22 November 2026** |
+| **Document Version / Date** | **Version 1.2 (Full 4-Service Compose, Live Gateway Smoke, Real Gemini E2E & Guest Rate-Limit Limitation), 22 November 2026** |
 | **Repository Filepath** | `docs/assignment3/Deployment_Plan.md` |
 | **Verified Base Commit SHA** | `dev` @ `13f71d738a895c62d8e28293e0bf47d60b01e1d5` (`AT-04` & live `--mode=smoke` run on `18d2e309ba154d4b61648c0f6252a66c72ea992e`) |
 | **Related Documents** | `docs/assignment3/contracts/API_CONTRACT.md` (v1.1), `docs/assignment3/Acceptance_Tests_and_Criteria.md` (v0.6), `docs/assignment3/Test_Results_Report.md` (v1.0), `docs/QA_Plan.md` (v1.5) |
 
-> **Verification Summary (v1.1):** All four containerized services (`redis`, `mcp-server`, `api-gateway`, `web`) in [`compose.yaml`](../../compose.yaml) build cleanly on `node:24-alpine` / `redis:7-alpine`, reach Docker `healthy`, enforce strict `S-06` network isolation (`edge`, `internal: true`, and `mcp-server`-only `egress`), and execute all four official acceptance workflows end-to-end (`AT-01`..`AT-04` **`4 / 4 PASS`** with real Google Gemini via gitignored local `.env`), plus live `--mode=smoke` (`11/11` PASS, [`gateway-live-smoke.txt`](evidence/deployment/gateway-live-smoke.txt)) and the `500`-request `NFR-01`/`NFR-02` benchmark ([`nfr-e2e-latency-cache-benchmark.txt`](evidence/deployment/nfr-e2e-latency-cache-benchmark.txt)).
+> **Verification Summary (v1.2):** All four containerized services (`redis`, `mcp-server`, `api-gateway`, `web`) in [`compose.yaml`](../../compose.yaml) build cleanly on `node:24-alpine` / `redis:7-alpine`, reach Docker `healthy`, enforce strict `S-06` network isolation (`edge`, `internal: true`, and `mcp-server`-only `egress`), and execute all four official acceptance workflows end-to-end (`AT-01`..`AT-04` **`4 / 4 PASS`** with real Google Gemini via gitignored local `.env`), plus live `--mode=smoke` (`11/11` PASS, [`gateway-live-smoke.txt`](evidence/deployment/gateway-live-smoke.txt)) and the `500`-request `NFR-01`/`NFR-02` benchmark ([`nfr-e2e-latency-cache-benchmark.txt`](evidence/deployment/nfr-e2e-latency-cache-benchmark.txt)).
 
 ---
 
@@ -23,7 +23,7 @@ In compliance with the Project Assignment 3 deliverables specification, contribu
 
 | Member Name | Student ID | GitHub Account | Project Role | Contribution to this Document | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Ahmet Sefa Efendioğlu** | 241101066 | `@Sefa-Efendioglu` | Gateway, Security & Release Lead | **Lead Author:** Authored `apps/api-gateway/Dockerfile`, `.dockerignore`, `compose.yaml` (`egress` fix `PR #44`), Deployment Overview, Configuration Plan; verified full 4-service Compose stack, `S-06` network boundaries, Redis persistence, `--mode=smoke`, `NFR-01`/`NFR-02` benchmark, and `AT-01..AT-04`. | **Completed (v1.1)** |
+| **Ahmet Sefa Efendioğlu** | 241101066 | `@Sefa-Efendioglu` | Gateway, Security & Release Lead | **Lead Author:** Authored `apps/api-gateway/Dockerfile`, `.dockerignore`, `compose.yaml` (`egress` fix `PR #44`), Deployment Overview, Configuration Plan; verified full 4-service Compose stack, `S-06` network boundaries, Redis persistence, `--mode=smoke`, `NFR-01`/`NFR-02` benchmark, and `AT-01..AT-04`. | **Completed (v1.2)** |
 | **Yunus Emre Biçer** | 241101009 | `@YunusEmre113` | Web Client Lead | Delivered `apps/web/Dockerfile`, `/healthz`, standalone build, `apps/web/README.md` (`PR #18`), `/giris` login (`PR #20`), and streaming chat screen (`Y-07`, `PR #32`). | Handover merged (`#18`, `#20`, `#32`) |
 | **Murat Can Işık** | 241101013 | `@cmuratt` | MCP Server & Agent Lead | Delivered `apps/mcp-server/Dockerfile` (`M-13`, `PR #28`), connector-backed MCP runtime (`PR #26`, `#40`), `AgentOrchestrator` + Gemini + `/internal/agent/stream` (`PR #29`, `#34`, `#35`, `#39`), and [`handovers/murat.md`](handovers/murat.md). | Handover merged (`#28`, `#42`, `#45`) |
 | **Arda Çelik** | 241101065 | `@ardacelik11` | Connectors & Data Lead | Delivered live Redis connector runtime (`A-02`, `PR #30`, `#31`), advancing `CONNECTOR_FIXED_NOW` (`Q3`), Redis verification commands, and [`handovers/arda.md`](handovers/arda.md). | Handover merged (`#30`, `#31`) |
@@ -56,10 +56,10 @@ In compliance with the Project Assignment 3 deliverables specification, contribu
 
 | Task ID | Work Package Description | Assignee | Reviewer | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **TSK-DEP-01** | Draft Deployment Overview, topology, runtime inventory, and mock boundary (§1) | Ahmet Sefa Efendioğlu | Entire Team | **Completed (v1.1)** |
+| **TSK-DEP-01** | Draft Deployment Overview, topology, runtime inventory, and mock boundary (§1) | Ahmet Sefa Efendioğlu | Entire Team | **Completed (v1.2)** |
 | **TSK-DEP-02** | Author `apps/api-gateway/Dockerfile`, `.dockerignore`, and `compose.yaml` (`S-05`, `S-06`, `PR #22`, `#44`) | Ahmet Sefa Efendioğlu | Murat Can Işık, Yunus Emre Biçer | **Completed & Verified** (`compose config`, isolated `egress` network, live 4-service Compose smoke) |
-| **TSK-DEP-03** | Document verified local build/test/stub runbook & 4-service Compose procedure (§2) | Ahmet Sefa Efendioğlu | Entire Team | **Completed (v1.1)** |
-| **TSK-DEP-04** | Finalize Configuration Plan, env matrix, secret handling, and network boundaries (§3) | Ahmet Sefa Efendioğlu | Arda Çelik, Murat Can Işık | **Completed (v1.1)** |
+| **TSK-DEP-03** | Document verified local build/test/stub runbook & 4-service Compose procedure (§2) | Ahmet Sefa Efendioğlu | Entire Team | **Completed (v1.2)** |
+| **TSK-DEP-04** | Finalize Configuration Plan, env matrix, secret handling, and network boundaries (§3) | Ahmet Sefa Efendioğlu | Arda Çelik, Murat Can Işık | **Completed (v1.2)** |
 | **TSK-DEP-05** | Integrate `apps/web/Dockerfile` handover (`PR #18`) into `dev` and verify web container build | Yunus Emre Biçer / Ahmet Sefa Efendioğlu | Ahmet Sefa Efendioğlu | **Completed & Verified** (`#18` merged & verified in 3-service & 4-service Compose) |
 | **TSK-DEP-06** | Deliver `apps/mcp-server/Dockerfile`, connector registration, `/internal/agent/stream` (`M-02`..`M-08`, `M-13`) | Murat Can Işık | Ahmet Sefa Efendioğlu | **Completed & Verified** (`#26`, `#28`, `#29`, `#34`–`#40`, `#44`, `#45` merged) |
 | **TSK-DEP-07** | Deliver live Redis connector config, `CONNECTOR_FIXED_NOW`, and Redis handover (`A-02`, `A-12`, `Q3`) | Arda Çelik | Ahmet Sefa Efendioğlu | **Completed & Verified** (`#30`, `#31` merged; Redis `cache:*` & `PTTL` verified in Compose) |
@@ -240,7 +240,7 @@ Aligned with `API Contract v1.1 §7`, `.env.example`, [`apps/mcp-server/README.m
 
 ### 3.4 Cache TTLs, Rate Limits & Timezone Defaults
 
-- **Rate Limit Policy (FR-08):** `30` requests / `60 s` sliding window per `studentId` (`rate:student:<id>`) or guest IP (`rate:ip:<ip>`) stored in Redis sorted sets via `RespTcpRedisClient`, failing open to in-memory only on Redis outage; returns `429 RATE_LIMITED` + `Retry-After`.
+- **Rate Limit Policy (FR-08):** `30` requests / `60 s` sliding window per `studentId` (`rate:student:<id>`) or guest IP (`rate:ip:<ip>`) stored in Redis sorted sets via `RespTcpRedisClient`, failing open to in-memory only on Redis outage; returns `429 RATE_LIMITED` + `Retry-After`. *(Unauthenticated guests behind Next.js server-side rewrites share the `web` container IP bucket; see §3.5 item 4.)*
 - **Gateway Timeouts:** `10,000 ms` on `/api/v1/query` (`504 UPSTREAM_TIMEOUT`), `20,000 ms` on `/api/v1/chat/stream`.
 - **Timezone:** Campus schedule and menu calculations use Türkiye Time (`UTC+3`).
 
@@ -249,6 +249,7 @@ Aligned with `API Contract v1.1 §7`, `.env.example`, [`apps/mcp-server/README.m
 1. **Standard MCP Client `tools/call` Gap (`M-09`):** `mcp-server` uses content `type: "json"` (contract §4); standard MCP Inspector accepts `tools/list` and rejects `tools/call` (`Invalid tools/call result`). Gateway and UI are unaffected; fix is planned post-demo.
 2. **Gemini Free-Tier Model Availability:** Model availability depends on the active `.env` `GEMINI_API_KEY`; re-verify `GEMINI_MODEL` (`gemini-3.5-flash-lite`) before live presentation (`compose.yaml` passes it without rebuild).
 3. **Deferred Scope:** PostgreSQL/Prisma user persistence (`FR-20`), Connector Health Card D (`FR-18`), and 5-student empirical SUS session (`NFR-06`) are deferred outside PA3 scope.
+4. **Shared Guest Rate-Limit Bucket Behind Next.js Rewrite (`FR-08`):** Fastify runs with `trustProxy: false` (`apps/api-gateway/src/server.ts`), so `request.ip` reflects the TCP peer address (`apps/api-gateway/src/auth/tokenTermination.ts`). Authenticated users are keyed by `rate:student:<studentId>` (`apps/api-gateway/src/rate-limiter/slidingWindowRateLimiter.ts`) and are unaffected, whereas all unauthenticated guest requests proxied through Next.js's server-side `/api/v1/*` rewrite (`apps/web/next.config.ts`) arrive from the `web` container's `edge` bridge IP and share a single `30 req / 60 s` sliding-window bucket (`rate:ip:<web-container-ip>`). Enabling `trustProxy` / trusting `X-Forwarded-For` is intentionally avoided without a hardened perimeter reverse proxy, because Next.js rewrites do not inject or strip client-supplied `X-Forwarded-For` headers, which would allow trivial IP spoofing and rate-limit bypass. This is acceptable for the single-user academic demo; production deployment requires a trusted front-end reverse proxy (e.g., Nginx or Envoy) that overwrites `X-Forwarded-For`, paired with hop-scoped Fastify `trustProxy`.
 
 ---
 
@@ -261,3 +262,4 @@ Aligned with `API Contract v1.1 §7`, `.env.example`, [`apps/mcp-server/README.m
 | **0.3** | 20 Nov 2026 | Overview, Contributors, Task Matrix, §1.2, §2.2, §3.5 | Verified 3-service Compose (`web` + `api-gateway` + `redis`) after `PR #18` & `#20` merge (`compose-3service-smoke.txt`); updated Vitest count to `230/230`. | Ahmet Sefa Efendioğlu |
 | **1.0** | 22 Nov 2026 | All (`dev` @ `13f71d7`) | Integrated Murat (`#26`, `#28`, `#29`, `#34`–`#40`, `#45`) and Arda (`#30`, `#31`) deliverables + `PR #44` (`egress` network & `GEMINI_MODEL`); recorded full 4-service Compose verification (`compose-4service-egress-smoke.txt`), `NFR-01`/`NFR-02` benchmark (`nfr-e2e-latency-cache-benchmark.txt`), acceptance runbook (`CONNECTOR_FIXED_NOW`), and closed all deployment code blockers. | Ahmet Sefa Efendioğlu |
 | **1.1** | 22 Nov 2026 | Summary, Task Matrix, §2.2, §2.4, §3.5 | Recorded full `AT-01`..`AT-04` **`4 / 4 PASS`** with real Gemini configured in gitignored `.env`, added live `run-acceptance-harness.mjs --mode=smoke` (`11/11 PASS`, `gateway-live-smoke.txt`), and closed the local `.env` key limitation in §3.5. | Ahmet Sefa Efendioğlu |
+| **1.2** | 22 Nov 2026 | §3.4, §3.5 | Added known limitation for the shared guest IP rate-limit bucket behind Next.js rewrites and documented why `X-Forwarded-For` is intentionally untrusted without a perimeter reverse proxy (per Yunus Emre Biçer's review). | Ahmet Sefa Efendioğlu |

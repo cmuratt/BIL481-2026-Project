@@ -12,7 +12,7 @@
 | **Repository Filepath** | `docs/assignment3/Test_Results_Report.md` |
 | **Tested Commit SHAs** | Code baseline `dev` @ `13f71d738a895c62d8e28293e0bf47d60b01e1d5` (`AT-01`..`AT-03`, `NFR-01/02`); `18d2e309ba154d4b61648c0f6252a66c72ea992e` (`AT-04` & `--mode=smoke`, identical application source tree) |
 | **API Contract Version** | API Contract v1.1 (`docs/assignment3/contracts/API_CONTRACT.md`) |
-| **Related Documents** | `docs/assignment3/Acceptance_Tests_and_Criteria.md` (v0.6), `docs/assignment3/Deployment_Plan.md` (v1.1), `docs/QA_Plan.md` (v1.5) |
+| **Related Documents** | `docs/assignment3/Acceptance_Tests_and_Criteria.md` (v0.6), `docs/assignment3/Deployment_Plan.md` (v1.2), `docs/QA_Plan.md` (v1.5) |
 
 > **Final Verification Summary (v1.0):** All codebase/deployment blockers are resolved and all four official acceptance tests (**`AT-01`, `AT-02`, `AT-03`, `AT-04` — `4 / 4 PASS`**) passed end-to-end against the live 4-service Docker Compose stack (`redis`, `mcp-server`, `api-gateway`, `web` with `NEXT_PUBLIC_WEB_DATA_SOURCE=gateway`) in real Google Chrome (`Chrome/157.0.8103.79`), including real Google Gemini (`provider="gemini"`, `isFake=false`) streaming and PII redaction for `AT-04`. Automated Vitest suites (`33/33` files, `366` passed / `8` real-Redis skipped offline) and `NFR-01`/`NFR-02` benchmarks are reported separately in Section 2 as supporting verification.
 
