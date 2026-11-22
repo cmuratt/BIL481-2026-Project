@@ -1,5 +1,6 @@
 import type { ConversationTurn } from '@/lib/chat/conversation';
 import { canRetry, chatErrorText, endsSession, toolLabel, toolStatusLabel } from '@/lib/chat/presentation';
+import { AnswerText } from './AnswerText';
 import styles from './chat.module.css';
 
 /**
@@ -43,7 +44,7 @@ export function ChatTurnView({
           </ul>
         )}
 
-        {answer.text && <p className={styles.answerText}>{answer.text}</p>}
+        {answer.text && <AnswerText text={answer.text} />}
 
         {waiting && !answer.slow && (
           <p className={styles.pending} role="status">
