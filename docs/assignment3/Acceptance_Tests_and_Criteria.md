@@ -8,17 +8,17 @@
 | **Assignment** | Project Assignment 3 — Deliverable 2: Acceptance Tests and Acceptance Criteria |
 | **Group Name** | Group-ASYM |
 | **Document Lead & Author** | **Yunus Emre Biçer** (241101009) — `@YunusEmre113` |
-| **Document Version / Date** | **Version 0.7 (AT-04 test data and agent tool log), 22 November 2026** — see §9 Change Record |
+| **Document Version / Date** | **Version 1.0 (final, frozen), 22 November 2026** — see §9 Change Record |
 | **Repository Filepath** | `docs/assignment3/Acceptance_Tests_and_Criteria.md` |
-| **Related Documents** | `docs/Requirements_Document.md` (FR/NFR IDs), `docs/Design_Document.md` §3 (UC-01..UC-04), `docs/QA_Plan.md` (TC-01..TC-08), API Contract v1.1 (to be committed as `docs/assignment3/contracts/API_CONTRACT.md`), `docs/assignment3/Deployment_Plan.md` and `docs/assignment3/Test_Results_Report.md` (both in preparation, lead: Ahmet Sefa Efendioğlu) |
+| **Related Documents** | `docs/Requirements_Document.md` (FR/NFR IDs), `docs/Design_Document.md` §3 (UC-01..UC-04), `docs/QA_Plan.md` (TC-01..TC-08), API Contract v1.1 (`docs/assignment3/contracts/API_CONTRACT.md`), `docs/assignment3/Deployment_Plan.md` (v1.3) and `docs/assignment3/Test_Results_Report.md` (v1.1, results of AT-01..AT-04; lead: Ahmet Sefa Efendioğlu) |
 
-> **Status of this draft.** This document defines *how* the four selected scenarios will be accepted and *what* counts as a pass. It does **not** contain test results: actual results, dates, commit SHAs and logs are recorded only in the Test Results Report after the tests are executed. All steps, including the chat steps of AT-04, name the actual screen elements. v0.7 fixes the AT-04 test data after the first AT-04 run (see §9). The document is planned to be frozen as v1.0 on 26 November 2026.
+> **Status.** Final version 1.0, frozen on 22 November 2026 (planned for 26 November; frozen earlier because all reviews were done and all four tests had been run). This document defines *how* the four selected scenarios are accepted and *what* counts as a pass. It does **not** contain test results: actual results, dates, commit SHAs and logs are recorded only in the Test Results Report (v1.1). AT-01..AT-03 were run against v0.6 and AT-04 (run 2) against v0.7; v1.0 changes no criterion or step of either version, so those runs remain valid for v1.0. Any later change to a criterion needs a new version and a new run of the affected test.
 
 ## List of Contributors
 
 | Member | Student ID | GitHub | Role in this document | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **Yunus Emre Biçer** | 241101009 | `@YunusEmre113` | Lead author: structure, acceptance criteria, AT-01..AT-04, traceability, task matrix | Drafted v0.1 |
+| **Yunus Emre Biçer** | 241101009 | `@YunusEmre113` | Lead author: structure, acceptance criteria, AT-01..AT-04, traceability, task matrix | Author of v0.1 – v1.0 |
 | **Arda Çelik** | 241101065 | `@ardacelik11` | Review of data, cache and stale-fallback criteria (AC-01.x, AC-02.x, AC-03.x) | Reviewed — no objection; clarifications applied in v0.6 (PR #17 comment, 20 Nov 2026) |
 | **Murat Can Işık** | 241101013 | `@cmuratt` | Review of MCP and agent criteria (AC-04.3 – AC-04.7, AC-04.10, AC-04.11) | Reviewed — no objection (PR #17 review, 20 Nov 2026) |
 | **Ahmet Sefa Efendioğlu** | 241101066 | `@Sefa-Efendioglu` | Review of gateway, security and end-to-end execution conditions (AC-04.1, AC-04.8, AC-04.9) | Reviewed — approved with two notes (PR #17 comment, 20 Nov 2026) |
@@ -412,16 +412,16 @@ Estimates are planning values for Project Assignment 3. Actual hours are filled 
 
 | Task ID | Task (this document only) | Responsible | Reviewer | Estimated (h) | Actual (h) | Status |
 | :--- | :--- | :--- | :--- | ---: | ---: | :--- |
-| TSK-AT-01 | Structure, approach, pass/fail rules, data source declaration (§1, §2) | Yunus Emre Biçer | Ahmet Sefa Efendioğlu | 0.30 | ≈ 0.25 | Draft done (v0.1) |
-| TSK-AT-02 | Acceptance criteria AC-01.x – AC-04.x (§3) | Yunus Emre Biçer | Arda Çelik (UC-01..03), Murat Can Işık (UC-04 agent), Ahmet Sefa Efendioğlu (UC-04 security) | 0.40 | ≈ 0.33 | Draft done (v0.1) |
-| TSK-AT-03 | AT-01..AT-03 steps against the implemented dashboard (§4.1–4.3) | Yunus Emre Biçer | Arda Çelik | 0.30 | ≈ 0.25 | Draft done (v0.1) |
+| TSK-AT-01 | Structure, approach, pass/fail rules, data source declaration (§1, §2) | Yunus Emre Biçer | Ahmet Sefa Efendioğlu | 0.30 | ≈ 0.25 | Done (v0.1; revised up to v1.0) |
+| TSK-AT-02 | Acceptance criteria AC-01.x – AC-04.x (§3) | Yunus Emre Biçer | Arda Çelik (UC-01..03), Murat Can Işık (UC-04 agent), Ahmet Sefa Efendioğlu (UC-04 security) | 0.40 | ≈ 0.33 | Done (v0.1; revised up to v1.0) |
+| TSK-AT-03 | AT-01..AT-03 steps against the implemented dashboard (§4.1–4.3) | Yunus Emre Biçer | Arda Çelik | 0.30 | ≈ 0.25 | Done (v0.1; revised in v0.6) |
 | TSK-AT-04 | AT-04 steps (§4.4); make concrete after login and chat UI exist | Yunus Emre Biçer | Murat Can Işık, Ahmet Sefa Efendioğlu | 0.30 | — | Done (v0.5); test data fixed in v0.7 |
-| TSK-AT-05 | Correspondence and traceability (§5, §6), scope limits (§7) | Yunus Emre Biçer | Murat Can Işık | 0.20 | ≈ 0.17 | Draft done (v0.1) |
+| TSK-AT-05 | Correspondence and traceability (§5, §6), scope limits (§7) | Yunus Emre Biçer | Murat Can Işık | 0.20 | ≈ 0.17 | Done (v0.1; revised up to v1.0) |
 | TSK-AT-06 | Review of data, cache and stale criteria | Arda Çelik | Yunus Emre Biçer | 0.10 | — | Done (no objection, clarifications applied in v0.6; PR #17 comment, 20 Nov 2026) |
 | TSK-AT-07 | Review of agent, MCP and streaming criteria | Murat Can Işık | Yunus Emre Biçer | 0.10 | — | Done (no objection, PR #17 review, 20 Nov 2026) |
 | TSK-AT-08 | Review of gateway/security criteria and execution conditions | Ahmet Sefa Efendioğlu | Yunus Emre Biçer | 0.10 | — | Done (approved, PR #17 comment, 20 Nov 2026) |
-| TSK-AT-09 | Freeze v1.0 (26 Nov 2026) after reviews and UI completion | Yunus Emre Biçer | Entire team | 0.20 | — | Planned |
-| | **Total** | | | **2.00** | **≈ 1.00 so far** (4 of 9 tasks) | |
+| TSK-AT-09 | Freeze v1.0 (26 Nov 2026) after reviews and UI completion | Yunus Emre Biçer | Entire team | 0.20 | — | Done (frozen 22 Nov 2026) |
+| | **Total** | | | **2.00** | **≈ 1.00 recorded** (only the four v0.1 drafting tasks were timed) | |
 
 ---
 
@@ -436,6 +436,7 @@ Estimates are planning values for Project Assignment 3. Actual hours are filled 
 | 0.5 | 20 Nov 2026 | Status note, §3.4 AC-04.1/.2/.3/.12, §4.4 AT-04 steps 1, 3, 4, 10 and evidence, §6.3, §7 | AT-04 steps made concrete for the implemented chat screen (PR #32). Step 3 now sends the question through the dashboard query box ("Asistana yönlendirilecek" → "Asistanda sor" → prefilled message → "Gönder"), because the router decision of AC-04.3 is only visible there; the previous wording would not have let a tester observe it. Steps 1, 4 and 10 name the actual texts, buttons and badges. AC-04.12 aligned with the implemented and documented rule (Design Document v1.1 §3.5): cancellation after 20 s without any data, explicit retry, no automatic resend. Chat screen marked implemented in §6.3 and §7; agent, PII scrubber and agent stream remain planned | Yunus Emre Biçer |
 | 0.6 | 21 Nov 2026 | List of Contributors, §2.3, §2.4, §3.1–3.3 (AC-01.7, AC-02.2, AC-02.5, AC-02.7, AC-03.4, AC-03.6, AC-03.7), §4.1–4.3 (preconditions, steps, pass/fail rules, evidence), §5, §6.1, §7, §8, Appendices A and B | Applied Arda Çelik's review of AC-01.x – AC-03.x (PR #17, 20 Nov 2026; checked against the connector code of PR #31): test clock starts at the fixed instant and advances in real time, with the start time recorded; cache emptied before AT-01..AT-03; connector log (connector.execute, upstreamCalled) defined as the evidence for "executed once"; AC-01.7 reworded to one connector execution for 2026-11-23 over the whole AT-01 run, avoiding a false FAIL when the browser date already loads that menu; AC-02.2 compares with the connector time of the response and names the count (3); AC-02.5 made mandatory (MCP restart at 22:30; METRO_LINE runs until 23:00); AC-03.4 uses the 15-minute occupancy window; AC-03.7 made mandatory with the live-placeholder fault procedure (60–180 s window, Redis cache). Only AC-04.12 remains conditional. All three reviews are now recorded | Yunus Emre Biçer |
 | 0.7 | 22 Nov 2026 | Header, status note, §2.3, §2.4, §3.4 (AC-04.4, AC-04.5, AC-04.6), §4.4 (preconditions, test data, supporting tests, steps 5–6, evidence), §6.2, §6.3, §7, §8, Appendix B | **AT-04 test data fixed after the first AT-04 run (22 Nov 2026).** In that run the UC-04 question did not fit the data: with the AT-01..AT-03 clock (Monday 09:00) `demo-student-01` has no 10:30 class and `get_shuttle_schedule` returns only 09:15–09:45, so no answer could satisfy AC-04.6 (b), and the answer of that run did not. The cause was this document, which did not fix a test day, clock and student that fit the question. AT-04 now has its own day and clock (Tuesday 2026-11-24, 12:10; BIL 452 10:30–12:20; departures 12:15 / 12:30 / 12:45), and AC-04.6 (b) also forbids presenting an earlier departure as catchable. The criterion was not weakened; the first run stays recorded in the Test Results Report and AT-04 is run again. Also: AC-04.4 / AC-04.5 and step 5 use the agent tool log of PR #39 instead of a `tools/call` log, which does not exist for in-process agent calls (suggested by Murat Can Işık); AC-04.5 also checks for PII placeholders; agent test suites added; §6.3 and §7 brought up to date (chat screen, agent, Redis cache and Compose egress merged; `tools/call` gap of standard MCP clients noted); Appendix B gained the AT-04 restart and the agent tool log command | Yunus Emre Biçer |
+| 1.0 | 22 Nov 2026 | Header, status note, List of Contributors, §8 | **Final version, frozen.** No acceptance criterion, test step, test data or pass/fail rule changed from v0.7. Status note rewritten for the final version (results only in the Test Results Report v1.1; AT-01..AT-03 were run against v0.6 and AT-04 run 2 against v0.7, both unchanged in v1.0); related documents updated (API Contract committed, Deployment Plan v1.3, Test Results Report v1.1); task matrix statuses closed (TSK-AT-09 done). Frozen on 22 Nov instead of the planned 26 Nov because all reviews were recorded and all four tests had been run | Yunus Emre Biçer |
 
 ---
 
