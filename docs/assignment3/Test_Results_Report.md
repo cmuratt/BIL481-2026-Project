@@ -22,8 +22,8 @@
 
 | Member Name | Student ID | GitHub Account | Project Role | Contribution to this Document | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Ahmet Sefa Efendioğlu** | 241101066 | `@Sefa-Efendioglu` | QA, Security & Release Lead | **Lead Author:** Executed Chrome CDP + 4-service Compose `AT-01`..`AT-04` (incl. real Gemini `AT-04`), `--mode=smoke`, `compose-4service-egress-smoke.txt`, and `500`-request `NFR-01`/`NFR-02` benchmark; authored **v1.0**. | **Completed (v1.0)** |
-| **Yunus Emre Biçer** | 241101009 | `@YunusEmre113` | Web Client & AT Lead | Defined `AT-01`..`AT-04` criteria (`v0.6`), delivered `/giris`, streaming chat UI (`Y-07`), and `Y-10` responsive fixes. | Completed & Verified in E2E |
+| **Ahmet Sefa Efendioğlu** | 241101066 | `@Sefa-Efendioglu` | QA, Security & Release Lead | **Lead Author:** Executed Chrome CDP + 4-service Compose `AT-01`..`AT-04` (incl. Run 2 real Gemini `AT-04` on `v0.7`), `--mode=smoke`, `compose-4service-egress-smoke.txt`, and `500`-request `NFR-01`/`NFR-02` benchmark; authored **v1.1**. | **Completed (v1.1)** |
+| **Yunus Emre Biçer** | 241101009 | `@YunusEmre113` | Web Client & AT Lead | Defined `AT-01`..`AT-04` criteria (`v0.6` / `v0.7`, `PR #49`), delivered `/giris`, streaming chat UI (`Y-07`), light Markdown rendering (`PR #48`), and `Y-10` fixes. | Completed & Verified in E2E |
 | **Murat Can Işık** | 241101013 | `@cmuratt` | MCP Server & Agent Lead | Delivered MCP connector/agent stack (`PR #26`–`#40`), Gemini key coordination (`§8 Q2`), and supporting curl evidence (`PR #45`). | Completed & Verified in E2E |
 | **Arda Çelik** | 241101065 | `@ardacelik11` | Connectors & Data Lead | Delivered live Redis connector runtime, `CONNECTOR_FIXED_NOW`, real Redis `7/7` script evidence, and `AT-01..03` recipes (`PR #30`, `#31`). | Completed & Verified in E2E |
 
@@ -37,7 +37,7 @@
    - 2.2 [Acceptance Test Matrix (`AT-01`..`AT-04`)](#12-acceptance-test-matrix-at-01at-04)
    - 2.3 [Per-Test Execution Notes](#13-per-test-execution-notes)
 3. [Supporting Verification Results (Non-Acceptance)](#2-supporting-verification-results-non-acceptance)
-   - 3.1 [Monorepo Build & Automated Test Suite (Vitest — 366 Passed)](#21-monorepo-build--automated-test-suite-vitest--366-passed)
+   - 3.1 [Monorepo Build & Automated Test Suite (Vitest — 373 Passed)](#21-monorepo-build--automated-test-suite-vitest--373-passed)
    - 3.2 [Gateway Stub Self-Test & Live Compose Smoke Harness (`S-07`)](#22-gateway-stub-self-test--live-compose-smoke-harness-s-07)
    - 3.3 [Live 4-Service Docker Compose Stack, Egress & Isolation Verification](#23-live-4-service-docker-compose-stack-egress--isolation-verification)
    - 3.4 [End-to-End Performance & Cache Efficiency Metrics (`NFR-01` / `NFR-02`)](#24-end-to-end-performance--cache-efficiency-metrics-nfr-01--nfr-02)
