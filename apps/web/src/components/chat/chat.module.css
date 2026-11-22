@@ -95,9 +95,29 @@
 }
 
 .answerText {
-  margin: 0;
-  white-space: pre-wrap;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   overflow-wrap: anywhere;
+}
+
+.answerText p,
+.answerText ul,
+.answerText ol {
+  margin: 0;
+}
+
+.answerText ul,
+.answerText ol {
+  padding-left: 1.25rem;
+}
+
+.answerText li + li {
+  margin-top: 2px;
+}
+
+.answerHeading {
+  font-weight: 700;
 }
 
 /* One badge per invoked tool (FR-17) */

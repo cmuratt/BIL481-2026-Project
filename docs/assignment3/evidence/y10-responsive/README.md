@@ -53,7 +53,7 @@ Fix in `apps/web/src/components/cards/ShuttleCard.tsx`: the container is now `ro
 |---|---|---|
 | Chromium (Chrome / Edge engine) | Yunus | Done (this file) |
 | Firefox (Windows) | Yunus | PASS, visual check only: pages looked at in narrow and wide windows, nothing broken. The full step list below was not run. |
-| Safari (macOS) | Arda | Not run yet (NFR-07 names Safari, so a short visual check is still needed) |
+| Safari (macOS) | Arda | PASS, visual check only (reported 22 Nov 2026): no problems seen. The full step list below was not run. |
 
 Full step list (about 10 minutes, fixture mode is enough). For a quick visual check, steps 1–3 and 5 are enough:
 
