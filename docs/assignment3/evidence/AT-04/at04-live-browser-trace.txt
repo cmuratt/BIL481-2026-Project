@@ -1,27 +1,38 @@
-AT-04 Live Chrome + Real Gemini Execution Trace (GIT_SHA=18d2e309ba154d4b61648c0f6252a66c72ea992e)
-Executed at: 2026-11-22T16:02:30.582Z
+AT-04 (Run 2 — AT v0.7) Live Chrome + Real Gemini Execution Trace (GIT_SHA=61af2b038e53738adb089df254c7bc895df6eea3)
+Executed at: 2026-11-22T16:39:46.744Z
 mcp-server /health: cache=redis, agent.provider=gemini
-Test clock: CONNECTOR_FIXED_NOW=2026-11-23T09:00:00+03:00 (MCP started 2026-11-22T16:02:08.654Z)
-Cache reset: 2026-11-22T16:02:10.530Z
+Test clock: CONNECTOR_FIXED_NOW=2026-11-24T12:10:00+03:00 (MCP started 2026-11-22T16:39:17.362Z)
+Cache reset: 2026-11-22T16:39:20.200Z
 
---- Step 4 Stream Metrics & UI Badges ---
-sawStreamingState=true, firstAnswerRenderMs=7664ms, doneUiMs=7664ms
-SSE counts: tool=3, token=23, done=1, error=0 (first token index=3 < done index=26)
-UI Badges: ["Ders programı Yeni sorgu · 3 ms","Ring seferleri Önbellekten · 1 ms","Yemekhane menüsü Yeni sorgu · 1 ms"]
+--- Step 4 Stream Metrics, Markdown DOM & UI Badges ---
+sawStreamingState=true, firstAnswerRenderMs=13526ms, doneUiMs=13526ms
+renderedMarkdownRawAsterisks=false, strongElements=2
+SSE counts: tool=3, token=21, done=1, error=0 (first token index=3 < done index=24)
+UI Badges: ["Ders programı Yeni sorgu · 5 ms","Ring seferleri Önbellekten · 4 ms","Yemekhane menüsü Yeni sorgu · 3 ms"]
 
 --- Step 4 Final Done Answer ---
-*Not: Sunulan veriler sentetiktir.*
+*(Not: Bu yanıt sentetik (simüle edilmiş) verilere dayanmaktadır.)*
 
-Bugünkü ders programınıza göre saat 10:30'da dersiniz görünmüyor. Kayıtlı dersiniz **13:30 - 15:20** saatleri arasında (BIL 441 Computer Graphics, TM-105). Ana ring seferleri için sonraki hareket saatleri: **09:15, 09:30, 09:45**.
+Ders programınıza göre 10:30'da başlayan dersiniz 12:20'de bitiyor. Ana ring hattının sonraki kalkış saatleri 12:15, 12:30 ve 12:45'tir. 12:20'de biten dersten sonra 12:30 ringine yetişebilirsiniz.
 
-Bugünkü yemekhane menüsü:
-* **Öğle Yemeği (1060 kcal):** Domates Çorbası, Etli Kuru Fasulye, Pirinç Pilavı, Mantarlı Bulgur Pilavı (Vejetaryen). (Alerjenler: gluten, süt)
-* **Akşam Yemeği (770 kcal):** Sebze Çorbası, Etli Nohut, Şehriyeli Pilav.
+Bugünün yemekhane menüsü:
+* **Öğle Yemeği:** Tarhana Çorbası, Tavuk Sote, Bulgur Pilavı, Zeytinyağlı Taze Fasulye (950 kcal)
+* **Akşam Yemeği:** Ezogelin Çorbası, Izgara Tavuk Baget, Ayran (650 kcal)
+
+--- Step 4 Rendered DOM Answer Text ---
+(Not: Bu yanıt sentetik (simüle edilmiş) verilere dayanmaktadır.)
+
+Ders programınıza göre 10:30'da başlayan dersiniz 12:20'de bitiyor. Ana ring hattının sonraki kalkış saatleri 12:15, 12:30 ve 12:45'tir. 12:20'de biten dersten sonra 12:30 ringine yetişebilirsiniz.
+
+Bugünün yemekhane menüsü:
+
+Öğle Yemeği: Tarhana Çorbası, Tavuk Sote, Bulgur Pilavı, Zeytinyağlı Taze Fasulye (950 kcal)
+Akşam Yemeği: Ezogelin Çorbası, Izgara Tavuk Baget, Ayran (650 kcal)
 
 --- Step 5 Agent Tool Calls ([agent-tool]) ---
-mcp-server-1  | [agent-tool] {"event":"tool_call","timestamp":"2026-11-22T16:02:18.029Z","round":0,"toolName":"get_course_schedule","arguments":{"day":"TODAY"},"status":"LIVE","durationMs":3}
-mcp-server-1  | [agent-tool] {"event":"tool_call","timestamp":"2026-11-22T16:02:18.032Z","round":0,"toolName":"get_shuttle_schedule","arguments":{"route":"MAIN_RING"},"status":"CACHE_HIT","durationMs":1}
-mcp-server-1  | [agent-tool] {"event":"tool_call","timestamp":"2026-11-22T16:02:18.034Z","round":0,"toolName":"get_cafeteria_menu","arguments":{},"status":"LIVE","durationMs":1}
+mcp-server-1  | [agent-tool] {"event":"tool_call","timestamp":"2026-11-22T16:39:31.247Z","round":0,"toolName":"get_course_schedule","arguments":{"day":"TODAY"},"status":"LIVE","durationMs":5}
+mcp-server-1  | [agent-tool] {"event":"tool_call","timestamp":"2026-11-22T16:39:31.255Z","round":0,"toolName":"get_shuttle_schedule","arguments":{"route":"MAIN_RING"},"status":"CACHE_HIT","durationMs":4}
+mcp-server-1  | [agent-tool] {"event":"tool_call","timestamp":"2026-11-22T16:39:31.259Z","round":0,"toolName":"get_cafeteria_menu","arguments":{},"status":"LIVE","durationMs":3}
 
 --- Step 6 Tool Results Sent to Gemini (Round 1) ---
 {
@@ -32,19 +43,28 @@ mcp-server-1  | [agent-tool] {"event":"tool_call","timestamp":"2026-11-22T16:02:
       "response": {
         "data": [
           {
-            "courseCode": "BIL 441",
-            "courseTitle": "Computer Graphics",
-            "instructor": "Instructor C (synthetic)",
-            "classroom": "TM-105",
-            "day": "MONDAY",
-            "startTime": "13:30",
-            "endTime": "15:20"
+            "courseCode": "BIL 481",
+            "courseTitle": "Software Engineering",
+            "instructor": "Instructor A (synthetic)",
+            "classroom": "TM-213",
+            "day": "TUESDAY",
+            "startTime": "08:30",
+            "endTime": "10:20"
+          },
+          {
+            "courseCode": "BIL 452",
+            "courseTitle": "Distributed Systems",
+            "instructor": "Instructor D (synthetic)",
+            "classroom": "B-201",
+            "day": "TUESDAY",
+            "startTime": "10:30",
+            "endTime": "12:20"
           }
         ],
         "isSimulated": true,
         "isStale": false,
         "status": "LIVE",
-        "timestamp": "2026-11-23T06:00:26.578Z"
+        "timestamp": "2026-11-24T09:10:29.834Z"
       }
     },
     {
@@ -54,61 +74,61 @@ mcp-server-1  | [agent-tool] {"event":"tool_call","timestamp":"2026-11-22T16:02:
           "routeId": "MAIN_RING",
           "routeName": "Ana Ring Hattı (Kampüs – Metro – Yurtlar)",
           "nextDepartures": [
-            "09:15",
-            "09:30",
-            "09:45"
+            "12:15",
+            "12:30",
+            "12:45"
           ],
-          "activeVehicles": 3,
-          "lastUpdated": "2026-11-23T06:00:19.675Z"
+          "activeVehicles": 2,
+          "lastUpdated": "2026-11-24T09:10:19.589Z"
         },
         "isSimulated": true,
         "isStale": false,
         "status": "CACHE_HIT",
-        "timestamp": "2026-11-23T06:00:19.676Z"
+        "timestamp": "2026-11-24T09:10:19.590Z"
       }
     },
     {
       "name": "get_cafeteria_menu",
       "response": {
         "data": {
-          "date": "2026-11-23",
+          "date": "2026-11-24",
           "available": true,
           "lunch": {
-            "soup": "Domates Çorbası",
-            "mainDish": "Etli Kuru Fasulye",
-            "vegOption": "Mantarlı Bulgur Pilavı",
-            "sideDish": "Pirinç Pilavı",
-            "calories": 1060,
+            "soup": "Tarhana Çorbası",
+            "mainDish": "Tavuk Sote",
+            "vegOption": "Zeytinyağlı Taze Fasulye",
+            "sideDish": "Bulgur Pilavı",
+            "calories": 950,
             "allergens": [
               "gluten",
               "milk"
             ]
           },
           "dinner": {
-            "soup": "Sebze Çorbası",
-            "mainDish": "Etli Nohut",
-            "sideDish": "Şehriyeli Pilav",
-            "calories": 770
+            "soup": "Ezogelin Çorbası",
+            "mainDish": "Izgara Tavuk Baget",
+            "sideDish": "Ayran",
+            "calories": 650
           }
         },
         "isSimulated": true,
         "isStale": false,
         "status": "LIVE",
-        "timestamp": "2026-11-23T06:00:26.584Z"
+        "timestamp": "2026-11-24T09:10:29.847Z"
       }
     }
   ]
 }
 
 --- Step 7 Outbound Provider Log Summary ([agent-outbound]) ---
-round=0, provider=gemini, isFake=false, timestamp=2026-11-22T16:02:11.711Z
-round=1, provider=gemini, isFake=false, timestamp=2026-11-22T16:02:18.034Z
+round=0, provider=gemini, isFake=false, timestamp=2026-11-22T16:39:22.027Z
+round=1, provider=gemini, isFake=false, timestamp=2026-11-22T16:39:31.260Z
 Zero raw JWT/key/PII occurrences across 8 mcp-server log lines: VERIFIED
 
 --- Step 8 & 9 Security Checks ---
-Forged header on query/schedule deep-equal=true
+Forged header on query/schedule (TUESDAY) deep-equal=true
 Forged header on chat/stream -> HTTP 200 done.isComplete=true, 0 raw JWT in mcp-server logs
 mcp-server Ports={"3001/tcp":null}; host POST http://127.0.0.1:3001/mcp -> FAILED (ECONNREFUSED)
 Expired JWT -> HTTP 401 AUTHENTICATION_REQUIRED; Tampered JWT -> HTTP 401 AUTHENTICATION_REQUIRED
 MCP log lines before/after Step 9: 22 -> 22
-Step 10 conditional (>5s slow indicator): OBSERVED (7664 ms >= 5000 ms; slow notice rendered=true)
+Step 10 conditional (>5s slow indicator): OBSERVED (13526 ms >= 5000 ms; slow notice rendered=true)
