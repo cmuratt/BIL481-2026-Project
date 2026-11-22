@@ -116,7 +116,7 @@ For `docs/assignment3/traceability.md` (M-12). "Tests" lists automated suites; a
 | FR-17 | Chat stream client and chat screen | `apps/web/src/lib/chat/`, `src/components/chat/`, `src/components/AssistantView.tsx` | `sseParser.test.ts`, `chatStreamClient.test.ts`, `chatConversation.test.ts` | AT-04 steps 3–4 | Implemented (PR #32); end to end needs the agent stream (M-08) |
 | FR-18 | Dashboard, three cards, gateway client | `src/components/Dashboard.tsx`, `src/components/cards/`, `src/lib/gateway/` | `gatewayClient.test.ts`, `format.test.ts` | AT-01, AT-02, AT-03 | Implemented except card D and card-click prefill |
 | FR-19 | Card states (stale, empty, error, retry), chat latency flags | `src/components/cards/CardParts.tsx`, `src/lib/chat/chatStreamClient.ts` | `gatewayClient.test.ts`, `chatStreamClient.test.ts` | AT-02 step 8, AT-03 step 7, AT-04 step 10 (all conditional) | Implemented for cards and chat (PR #32) |
-| NFR-07 | Responsive layout | `src/app/globals.css`, `*.module.css` | — (manual) | AT-01 step 9 | Chromium: 375 / 768 / 1440 / 1920 px, keyboard, headings, labels and contrast checked (`evidence/y10-responsive/`); Firefox visual check passed; Safari not yet (Y-10) |
+| NFR-07 | Responsive layout | `src/app/globals.css`, `*.module.css` | — (manual) | AT-01 step 9 | Chromium: 375 / 768 / 1440 / 1920 px, keyboard, headings, labels and contrast checked (`evidence/y10-responsive/`); Firefox and Safari visual checks passed (Y-10) |
 | NFR-09 (web part) | Web Docker image | `apps/web/Dockerfile`, `src/app/healthz/route.ts` | — | Deployment Plan | Implemented; verified in the 3-service Compose stack by Sefa |
 
 ---
@@ -223,5 +223,5 @@ flowchart TB
 | Agent stream in contract §3.3 format (M-04, M-08) and `/api/v1/chat/stream` proxy (S-03) | Murat, Sefa | AT-04; the expected frames are documented in PR #19 | Proxy S-03 done; agent stream open (PR #29, M-08) |
 | `CONNECTOR_FIXED_NOW` for reproducible acceptance runs | Arda | AT-02 step 8, time-dependent checks | Implemented in PR #31 (open) |
 | Chat UI (Y-07), chat states (Y-08) | Yunus | AT-04 | Done (PR #32) |
-| Responsive and browser checks (Y-10) | Yunus (Chromium, Firefox), Arda (Safari) | NFR-07 | Chromium and Firefox done (PR #33); Safari open |
+| Responsive and browser checks (Y-10) | Yunus (Chromium, Firefox), Arda (Safari) | NFR-07 | Done: Chromium (PR #33), Firefox and Safari visual checks |
 | First real `docker build` of the web image | Sefa | NFR-09, Deployment Plan | Done (3-service Compose, Deployment Plan v0.3) |
