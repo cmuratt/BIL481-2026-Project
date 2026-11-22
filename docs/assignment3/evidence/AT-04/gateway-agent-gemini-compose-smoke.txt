@@ -3,26 +3,33 @@
 Date: 22 Nov 2026 (Murat, Windows 11, Docker 29.6.2, Compose v5.3.1)
 Status: NOT an AT-04 / AC-04.x PASS. This is a curl run of the chain gateway -> POST /internal/agent/stream -> real Gemini.
         It did not go through the browser UI and was not run by the QA owner. Formal AT-04 results go to Test_Results_Report.md.
+Version: 2 (22 Nov 2026, clean run). Version 1 used a local network override; PR #44 put that change into compose.yaml.
 
 ## Setup
-- git: dev at 13b8fb8 plus the change of the PR fix/pa3-mcp-redis-runtime-info (cache backend shown on /health; it does not affect the tools or the agent)
+- git: dev at b0cc12d (PR #44, the compose egress network, merged); no local override, compose.yaml exactly as committed
 - docker compose up --build -d with CONNECTOR_FIXED_NOW=2026-11-23T09:00:00+03:00 (Monday, from the AT document)
-- Provider: gemini, model = default gemini-3.5-flash-lite (GEMINI_MODEL not set); key only in .env, never printed
-- Cache: Redis (mcp-server log: connector.cache ready, backend redis); keys after the run: cache:dining:2026-11-23, cache:schedule:*:MONDAY, cache:shuttle:MAIN_RING
+- Provider: gemini, GEMINI_MODEL=gemini-3.5-flash-lite (passed by compose.yaml); key only in .env, never printed
+- /health of mcp-server (from the gateway container): {"status":"ok","cache":"redis","agent":{"provider":"gemini"}}
+- Redis keys after the runs: cache:dining:2026-11-23 cache:schedule:1ffb8df216b18d04:MONDAY cache:shuttle:MAIN_RING 
 - Login: POST /api/v1/auth/mock-login (synthetic persona), JWT used as Bearer token
 
-## Deployment finding (needs a compose.yaml change, Sefa's file)
-With compose.yaml as it is on dev, mcp-server is only on the internal (internal: true) network and cannot reach Gemini:
-the first chat request ended with an error event (log: 'Gemini request failed: TypeError'; node fetch to the Gemini host: EAI_AGAIN).
-This run used a local override (not committed) that adds a second network 'egress' (plain bridge, only mcp-server on it) to mcp-server:
-  networks: { egress: { driver: bridge } }   and   mcp-server.networks: [internal, egress]
-After that: mcp-server -> Gemini host reachable. Isolation re-checked: web -> mcp-server:3001 BLOCKED (timeout), web -> redis:6379 BLOCKED (timeout);
-host ports 3001 and 6379 not reachable; mcp-server networks: egress + internal; web network: edge only.
+## History: why compose.yaml needed a change (found in version 1 of this run)
+With compose.yaml before PR #44, mcp-server was only on the internal (internal: true) network and could not reach Gemini:
+the chat ended with an error event (log 'Gemini request failed: TypeError', DNS error EAI_AGAIN). PR #44 (Sefa) added a second network
+'egress' used only by mcp-server and passes GEMINI_MODEL. This version of the file shows the run without any override.
+
+## Network and isolation checks
+mcp-server: bil481-2026-project_egress bil481-2026-project_internal 
+web: bil481-2026-project_edge 
+redis: bil481-2026-project_internal 
+web -> mcp-server:3001: BLOCKED (timeout)
+web -> redis:6379: BLOCKED (timeout)
+host ports 3001 / 6379 (HTTP status, 000 = not reachable): 000 / 000
+guest (no JWT) chat request: HTTP 401
 
 ## Request
 POST http://localhost:3000/api/v1/chat/stream with Authorization: Bearer <JWT> and body:
 {"message":"10:30 dersimden sonra ringe yetişir miyim, bugün yemekte ne var?"}
-Guest (no JWT) request: HTTP 401 before any stream.
 
 ## Response headers
 HTTP/1.1 200 OK
@@ -30,55 +37,58 @@ Content-Type: text/event-stream; charset=utf-8
 Cache-Control: no-cache
 Connection: keep-alive
 
-## SSE frames received through the gateway
-events: 3 tool, 25 token, 1 done, 0 error
+## Run 1 (cold cache): SSE frames received through the gateway
+events: 3 tool, 24 token, 1 done, 0 error
 event: tool
-data: {"toolName":"get_course_schedule","status":"LIVE","durationMs":5}
-
-event: tool
-data: {"toolName":"get_shuttle_schedule","status":"CACHE_HIT","durationMs":1}
+data: {"toolName":"get_course_schedule","status":"LIVE","durationMs":12}
 
 event: tool
-data: {"toolName":"get_cafeteria_menu","status":"CACHE_HIT","durationMs":1}
+data: {"toolName":"get_shuttle_schedule","status":"LIVE","durationMs":5}
+
+event: tool
+data: {"toolName":"get_cafeteria_menu","status":"LIVE","durationMs":3}
 
 event: token
-data: {"text":"Ders programınıza göre "}
+data: {"text":"*(Veriler sentetiktir.)*\n\nBugünkü "}
 
 event: token
-data: {"text":"bugün saat 10:30'da "}
+data: {"text":"ders programınıza göre "}
 
 event: token
-data: {"text":"B-104 dersliğinde Machine "}
+data: {"text":"10:30'da B-104 dersliğinde "}
 
 event: token
-data: {"text":"Learning (BIL 421) "}
+data: {"text":"Machine Learning dersiniz "}
 
 event: token
-data: {"text":"dersiniz başlıyor ve "}
+data: {"text":"başlıyor ve 12:20'de "}
 
 event: token
-data: {"text":"12:20'de bitiyor; yani "}
+data: {"text":"bitiyor; yani 10:30'da "}
 
 event: token
-data: {"text":"10:30'da biten bir "}
+data: {"text":"biten bir dersiniz "}
 
 event: token
-data: {"text":"dersiniz görünmüyor (dersiniz "}
+data: {"text":"görünmüyor (08:30-10:20 arasında "}
 
 event: token
-data: {"text":"bu saatte başlıyor). \n\n"}
+data: {"text":"Database Management Systems "}
 
 event: token
-data: {"text":"Bugünkü ana ring "}
+data: {"text":"dersiniz var). Ana "}
 
 event: token
-data: {"text":"sefer saatleri: 09:15, "}
+data: {"text":"Ring için sıradaki "}
+
+event: token
+data: {"text":"kalkış saatleri: 09:15, "}
 
 event: token
 data: {"text":"09:30 ve 09:45'tir.\n\n"}
 
 event: token
-data: {"text":"Bugünkü yemekhane menüsü:\n"}
+data: {"text":"Bugünün yemekhane menüsü:\n"}
 
 event: token
 data: {"text":"* **Öğle Yemeği:** "}
@@ -96,10 +106,7 @@ event: token
 data: {"text":"Pilavı (Vejetaryen seçeneği) "}
 
 event: token
-data: {"text":"(1060 kalori, Alerjenler: "}
-
-event: token
-data: {"text":"gluten, süt)\n* "}
+data: {"text":"(1060 kcal)\n* "}
 
 event: token
 data: {"text":"**Akşam Yemeği:** Sebze "}
@@ -111,33 +118,116 @@ event: token
 data: {"text":"Şehriyeli Pilav (770 "}
 
 event: token
-data: {"text":"kalori)\n\n*(Not: Sunulan "}
-
-event: token
-data: {"text":"veriler sentetiktir.)*"}
+data: {"text":"kcal)"}
 
 event: done
-data: {"answer":"Ders programınıza göre bugün saat 10:30'da B-104 dersliğinde Machine Learning (BIL 421) dersiniz başlıyor ve 12:20'de bitiyor; yani 10:30'da biten bir dersiniz görünmüyor (dersiniz bu saatte başlıyor). \n\nBugünkü ana ring sefer saatleri: 09:15, 09:30 ve 09:45'tir.\n\nBugünkü yemekhane menüsü:\n* **Öğle Yemeği:** Domates Çorbası, Etli Kuru Fasulye, Pirinç Pilavı, Mantarlı Bulgur Pilavı (Vejetaryen seçeneği) (1060 kalori, Alerjenler: gluten, süt)\n* **Akşam Yemeği:** Sebze Çorbası, Etli Nohut, Şehriyeli Pilav (770 kalori)\n\n*(Not: Sunulan veriler sentetiktir.)*","toolsInvoked":["get_course_schedule","get_shuttle_schedule","get_cafeteria_menu"],"isComplete":true}
+data: {"answer":"*(Veriler sentetiktir.)*\n\nBugünkü ders programınıza göre 10:30'da B-104 dersliğinde Machine Learning dersiniz başlıyor ve 12:20'de bitiyor; yani 10:30'da biten bir dersiniz görünmüyor (08:30-10:20 arasında Database Management Systems dersiniz var). Ana Ring için sıradaki kalkış saatleri: 09:15, 09:30 ve 09:45'tir.\n\nBugünün yemekhane menüsü:\n* **Öğle Yemeği:** Domates Çorbası, Etli Kuru Fasulye, Pirinç Pilavı, Mantarlı Bulgur Pilavı (Vejetaryen seçeneği) (1060 kcal)\n* **Akşam Yemeği:** Sebze Çorbası, Etli Nohut, Şehriyeli Pilav (770 kcal)","toolsInvoked":["get_course_schedule","get_shuttle_schedule","get_cafeteria_menu"],"isComplete":true}
 
 
-## Agent tool log (mcp-server, one line per executed tool; AC-04.4 / AC-04.5)
-[agent-tool] {"event":"tool_call","timestamp":"2026-11-22T10:56:23.594Z","round":0,"toolName":"get_course_schedule","arguments":{"day":"TODAY"},"status":"LIVE","durationMs":5}
-[agent-tool] {"event":"tool_call","timestamp":"2026-11-22T10:56:23.596Z","round":0,"toolName":"get_shuttle_schedule","arguments":{"route":"MAIN_RING"},"status":"CACHE_HIT","durationMs":1}
-[agent-tool] {"event":"tool_call","timestamp":"2026-11-22T10:56:23.598Z","round":0,"toolName":"get_cafeteria_menu","arguments":{},"status":"CACHE_HIT","durationMs":1}
+## Run 2 (warm cache, 3034 ms): SSE frames
+events: 3 tool, 22 token, 1 done, 0 error
+event: tool
+data: {"toolName":"get_course_schedule","status":"CACHE_HIT","durationMs":3}
 
-## Redacted provider requests (mcp-server [agent-outbound]; AC-04.7 / AC-04.11): 2 lines, provider gemini, isFake false
-[agent-outbound] {"timestamp":"2026-11-22T10:56:22.851Z","provider":"gemini","isFake":false,"round":0,"request":{"systemInstruction":"You are the campus assistant of a university. Answer the student in the language of the question (Turkish or English). Use the provided tools to fetch campus data; call each tool at most once and only if the question needs it. Base every statement strictly on tool results. Never invent times, dishes, rooms or numbers. If a tool failed or returned nothing, say so plainly instead of guessing. When a result has isSimulated=true, state briefly that the data is synthetic. When a result has isStale=true, warn that the data may be out of date. Tool arguments never contain personal identifiers; the system resolves the signed-in student itself. Keep the answer short and practical.","turns":[{"role":"user","text":"10:30 dersimden sonra ringe yetişir miyim, bugün yemekte ne var?"}],"tools":[{"name":"get_cafeteria_menu","description":"Retrieves daily cafeteria menu and nutritional details including lunch, dinner, calorie counts, and availability for a given ISO date (FR-03).","parameters":{"type":"object","properties":{"date":{"type":"string","pattern":"^\\d{4}-\\d{2}-\\d{2}$","description":"Target date in ISO format (YYYY-MM-DD). Defaults to the current date if omitted."}}}},{"name":"get_shuttle_schedule","description":"Retrieves live and upcoming scheduled departure times for campus shuttle rings (MAIN_RING, METRO_LINE, DORMITORY_LINE) (FR-04).","parameters":{"type":"object","properties":{"route":{"type":"string","enum":["MAIN_RING","METRO_LINE","DORMITORY_LINE"],"description":"Shuttle ring route identifier. Allowed values: MAIN_RING, METRO_LINE, DORMITORY_LINE. Defaults to MAIN_RING."}}}},{"name":"get_library_occupancy","description":"Retrieves real-time library seat occupancy metrics and study floor availability (FLOOR_1, FLOOR_2, FLOOR_3, or ALL) (FR-05).","parameters":{"type":"object","properties":{"floor":{"type":"string","enum":["FLOOR_1","FLOOR_2","FLOOR_3","ALL"],"description":"Study floor selector. Allowed values: FLOOR_1, FLOOR_2, FLOOR_3, ALL. Defaults to ALL."}}}},{"name":"get_course_schedule","description":"Retrieves the personal daily academic course schedule for the authenticated student for a given day (FR-06). Requires verified student session context.","parameters":{"type":"object","properties":{"day":{"type":"string","description":"Day of week filter (e.g. TODAY, MONDAY, TUESDAY). Defaults to TODAY."}}}}]}}
-[agent-outbound] {"timestamp":"2026-11-22T10:56:23.598Z","provider":"gemini","isFake":false,"round":1,"request":{"systemInstruction":"You are the campus assistant of a university. Answer the student in the language of the question (Turkish or English). Use the provided tools to fetch campus data; call each tool at most once and only if the question needs it. Base every statement strictly on tool results. Never invent times, dishes, rooms or numbers. If a tool failed or returned nothing, say so plainly instead of guessing. When a result has isSimulated=true, state briefly that the data is synthetic. When a result has isStale=true, warn that the data may be out of date. Tool arguments never contain personal identifiers; the system resolves the signed-in student itself. Keep the answer short and practical.","turns":[{"role":"user","text":"10:30 dersimden sonra ringe yetişir miyim, bugün yemekte ne var?"},{"role":"model","functionCalls":[{"name":"get_course_schedule","args":{"day":"TODAY"},"thoughtSignature":"Eo4BCosBAWkUfRMayqhspK/fBGtXPwqVJ/T2JoqDsrsHITklM7UhZYYbGts5vBnfR0jVJifws7ZWzDtfrMBPajShNFQehSh9TdsT8lENw3nVqiyDO4Idlqe5ySeDps/txn1i/r4pu6UY8IvJtHDkPmpIMNVFBQ+W2tftf+flDD7nItYaTPUn+FIX9q/RoxA+Lw=="},{"name":"get_shuttle_schedule","args":{"route":"MAIN_RING"}},{"name":"get_cafeteria_menu","args":{}}]},{"role":"tool","results":[{"name":"get_course_schedule","response":{"data":[{"courseCode":"BIL 461","courseTitle":"Database Management Systems","instructor":"Instructor F (synthetic)","classroom":"TM-210","day":"MONDAY","startTime":"08:30","endTime":"10:20"},{"courseCode":"BIL 421","courseTitle":"Machine Learning","instructor":"Instructor B (synthetic)","classroom":"B-104","day":"MONDAY","startTime":"10:30","endTime":"12:20"}],"isSimulated":true,"isStale":false,"status":"LIVE","timestamp":"2026-11-23T06:00:24.952Z"}},{"name":"get_shuttle_schedule","response":{"data":{"routeId":"MAIN_RING","routeName":"Ana Ring Hattı (Kampüs – Metro – Yurtlar)","nextDepartures":["09:15","09:30","09:45"],"activeVehicles":3,"lastUpdated":"2026-11-23T06:01:14.626Z"},"isSimulated":true,"isStale":false,"status":"CACHE_HIT","timestamp":"2026-11-23T06:01:14.627Z"}},{"name":"get_cafeteria_menu","response":{"data":{"date":"2026-11-23","available":true,"lunch":{"soup":"Domates Çorbası","mainDish":"Etli Kuru Fasulye","vegOption":"Mantarlı Bulgur Pilavı","sideDish":"Pirinç Pilavı","calories":1060,"allergens":["gluten","milk"]},"dinner":{"soup":"Sebze Çorbası","mainDish":"Etli Nohut","sideDish":"Şehriyeli Pilav","calories":770}},"isSimulated":true,"isStale":false,"status":"CACHE_HIT","timestamp":"2026-11-23T06:00:53.458Z"}}]}],"tools":[{"name":"get_cafeteria_menu","description":"Retrieves daily cafeteria menu and nutritional details including lunch, dinner, calorie counts, and availability for a given ISO date (FR-03).","parameters":{"type":"object","properties":{"date":{"type":"string","pattern":"^\\d{4}-\\d{2}-\\d{2}$","description":"Target date in ISO format (YYYY-MM-DD). Defaults to the current date if omitted."}}}},{"name":"get_shuttle_schedule","description":"Retrieves live and upcoming scheduled departure times for campus shuttle rings (MAIN_RING, METRO_LINE, DORMITORY_LINE) (FR-04).","parameters":{"type":"object","properties":{"route":{"type":"string","enum":["MAIN_RING","METRO_LINE","DORMITORY_LINE"],"description":"Shuttle ring route identifier. Allowed values: MAIN_RING, METRO_LINE, DORMITORY_LINE. Defaults to MAIN_RING."}}}},{"name":"get_library_occupancy","description":"Retrieves real-time library seat occupancy metrics and study floor availability (FLOOR_1, FLOOR_2, FLOOR_3, or ALL) (FR-05).","parameters":{"type":"object","properties":{"floor":{"type":"string","enum":["FLOOR_1","FLOOR_2","FLOOR_3","ALL"],"description":"Study floor selector. Allowed values: FLOOR_1, FLOOR_2, FLOOR_3, ALL. Defaults to ALL."}}}},{"name":"get_course_schedule","description":"Retrieves the personal daily academic course schedule for the authenticated student for a given day (FR-06). Requires verified student session context.","parameters":{"type":"object","properties":{"day":{"type":"string","description":"Day of week filter (e.g. TODAY, MONDAY, TUESDAY). Defaults to TODAY."}}}}]}}
+event: tool
+data: {"toolName":"get_shuttle_schedule","status":"LIVE","durationMs":7}
 
-## Checks on the mcp-server log of this run
-- occurrences of the student id 241101065 in the whole mcp-server log: 0
+event: tool
+data: {"toolName":"get_cafeteria_menu","status":"CACHE_HIT","durationMs":2}
+
+event: token
+data: {"text":"*(Not: Veriler simüle "}
+
+event: token
+data: {"text":"edilmiştir.)*\n\nBugün 10:30 "}
+
+event: token
+data: {"text":"- 12:20 saatleri "}
+
+event: token
+data: {"text":"arasında B-104 sınıfında "}
+
+event: token
+data: {"text":"Machine Learning dersiniz "}
+
+event: token
+data: {"text":"bulunmaktadır. Ana ring "}
+
+event: token
+data: {"text":"kalkış saatleri 09:15, "}
+
+event: token
+data: {"text":"09:30 ve 09:45 "}
+
+event: token
+data: {"text":"olarak görünmektedir; 10:30'daki "}
+
+event: token
+data: {"text":"dersinizden sonraki ring "}
+
+event: token
+data: {"text":"saatleri listede yer "}
+
+event: token
+data: {"text":"almamaktadır.\n\nBugünün yemekhane "}
+
+event: token
+data: {"text":"menüsü:\n* **Öğle "}
+
+event: token
+data: {"text":"Yemeği:** Domates Çorbası, "}
+
+event: token
+data: {"text":"Etli Kuru Fasulye, "}
+
+event: token
+data: {"text":"Pirinç Pilavı, Mantarlı "}
+
+event: token
+data: {"text":"Bulgur Pilavı (Vejetaryen) "}
+
+event: token
+data: {"text":"(1060 kcal)\n* "}
+
+event: token
+data: {"text":"**Akşam Yemeği:** Sebze "}
+
+event: token
+data: {"text":"Çorbası, Etli Nohut, "}
+
+event: token
+data: {"text":"Şehriyeli Pilav (770 "}
+
+event: token
+data: {"text":"kcal)"}
+
+event: done
+data: {"answer":"*(Not: Veriler simüle edilmiştir.)*\n\nBugün 10:30 - 12:20 saatleri arasında B-104 sınıfında Machine Learning dersiniz bulunmaktadır. Ana ring kalkış saatleri 09:15, 09:30 ve 09:45 olarak görünmektedir; 10:30'daki dersinizden sonraki ring saatleri listede yer almamaktadır.\n\nBugünün yemekhane menüsü:\n* **Öğle Yemeği:** Domates Çorbası, Etli Kuru Fasulye, Pirinç Pilavı, Mantarlı Bulgur Pilavı (Vejetaryen) (1060 kcal)\n* **Akşam Yemeği:** Sebze Çorbası, Etli Nohut, Şehriyeli Pilav (770 kcal)","toolsInvoked":["get_course_schedule","get_shuttle_schedule","get_cafeteria_menu"],"isComplete":true}
+
+
+## Agent tool log (mcp-server, one line per executed tool, both runs; AC-04.4 / AC-04.5)
+[agent-tool] {"event":"tool_call","timestamp":"2026-11-22T14:46:44.962Z","round":0,"toolName":"get_course_schedule","arguments":{"day":"TODAY"},"status":"LIVE","durationMs":12}
+[agent-tool] {"event":"tool_call","timestamp":"2026-11-22T14:46:44.971Z","round":0,"toolName":"get_shuttle_schedule","arguments":{"route":"MAIN_RING"},"status":"LIVE","durationMs":5}
+[agent-tool] {"event":"tool_call","timestamp":"2026-11-22T14:46:44.976Z","round":0,"toolName":"get_cafeteria_menu","arguments":{},"status":"LIVE","durationMs":3}
+[agent-tool] {"event":"tool_call","timestamp":"2026-11-22T14:50:57.566Z","round":0,"toolName":"get_course_schedule","arguments":{"day":"TODAY"},"status":"CACHE_HIT","durationMs":3}
+[agent-tool] {"event":"tool_call","timestamp":"2026-11-22T14:50:57.575Z","round":0,"toolName":"get_shuttle_schedule","arguments":{"route":"MAIN_RING"},"status":"LIVE","durationMs":7}
+[agent-tool] {"event":"tool_call","timestamp":"2026-11-22T14:50:57.579Z","round":0,"toolName":"get_cafeteria_menu","arguments":{},"status":"CACHE_HIT","durationMs":2}
+
+## Redacted provider requests (mcp-server [agent-outbound], both runs; AC-04.7 / AC-04.11): 4 lines, provider gemini, isFake false
+[agent-outbound] {"timestamp":"2026-11-22T14:46:43.956Z","provider":"gemini","isFake":false,"round":0,"request":{"systemInstruction":"You are the campus assistant of a university. Answer the student in the language of the question (Turkish or English). Use the provided tools to fetch campus data; call each tool at most once and only if the question needs it. Base every statement strictly on tool results. Never invent times, dishes, rooms or numbers. If a tool failed or returned nothing, say so plainly instead of guessing. When a result has isSimulated=true, state briefly that the data is synthetic. When a result has isStale=true, warn that the data may be out of date. Tool arguments never contain personal identifiers; the system resolves the signed-in student itself. Keep the answer short and practical.","turns":[{"role":"user","text":"10:30 dersimden sonra ringe yetişir miyim, bugün yemekte ne var?"}],"tools":[{"name":"get_cafeteria_menu","description":"Retrieves daily cafeteria menu and nutritional details including lunch, dinner, calorie counts, and availability for a given ISO date (FR-03).","parameters":{"type":"object","properties":{"date":{"type":"string","pattern":"^\\d{4}-\\d{2}-\\d{2}$","description":"Target date in ISO format (YYYY-MM-DD). Defaults to the current date if omitted."}}}},{"name":"get_shuttle_schedule","description":"Retrieves live and upcoming scheduled departure times for campus shuttle rings (MAIN_RING, METRO_LINE, DORMITORY_LINE) (FR-04).","parameters":{"type":"object","properties":{"route":{"type":"string","enum":["MAIN_RING","METRO_LINE","DORMITORY_LINE"],"description":"Shuttle ring route identifier. Allowed values: MAIN_RING, METRO_LINE, DORMITORY_LINE. Defaults to MAIN_RING."}}}},{"name":"get_library_occupancy","description":"Retrieves real-time library seat occupancy metrics and study floor availability (FLOOR_1, FLOOR_2, FLOOR_3, or ALL) (FR-05).","parameters":{"type":"object","properties":{"floor":{"type":"string","enum":["FLOOR_1","FLOOR_2","FLOOR_3","ALL"],"description":"Study floor selector. Allowed values: FLOOR_1, FLOOR_2, FLOOR_3, ALL. Defaults to ALL."}}}},{"name":"get_course_schedule","description":"Retrieves the personal daily academic course schedule for the authenticated student for a given day (FR-06). Requires verified student session context.","parameters":{"type":"object","properties":{"day":{"type":"string","description":"Day of week filter (e.g. TODAY, MONDAY, TUESDAY). Defaults to TODAY."}}}}]}}
+[agent-outbound] {"timestamp":"2026-11-22T14:46:44.977Z","provider":"gemini","isFake":false,"round":1,"request":{"systemInstruction":"You are the campus assistant of a university. Answer the student in the language of the question (Turkish or English). Use the provided tools to fetch campus data; call each tool at most once and only if the question needs it. Base every statement strictly on tool results. Never invent times, dishes, rooms or numbers. If a tool failed or returned nothing, say so plainly instead of guessing. When a result has isSimulated=true, state briefly that the data is synthetic. When a result has isStale=true, warn that the data may be out of date. Tool arguments never contain personal identifiers; the system resolves the signed-in student itself. Keep the answer short and practical.","turns":[{"role":"user","text":"10:30 dersimden sonra ringe yetişir miyim, bugün yemekte ne var?"},{"role":"model","functionCalls":[{"name":"get_course_schedule","args":{"day":"TODAY"},"thoughtSignature":"Eo4BCosBAWkUfROrgtfepxJWqJj9H+wjmcPSJQefMHpo3NEMqot7w+OgHleD6Zz2+Zj6AACMrLU2X2IoJJoEwa90/2YyCb6aOEMoDOiCKqjLha+p+mLoTkC5Iags53XbRqf30rCgSeWKLRlepNRRMd60ubwdpUbHrtLlgwppmmMyPb40ilCH1BxIcpU9KIWp0A=="},{"name":"get_shuttle_schedule","args":{"route":"MAIN_RING"}},{"name":"get_cafeteria_menu","args":{}}]},{"role":"tool","results":[{"name":"get_course_schedule","response":{"data":[{"courseCode":"BIL 461","courseTitle":"Database Management Systems","instructor":"Instructor F (synthetic)","classroom":"TM-210","day":"MONDAY","startTime":"08:30","endTime":"10:20"},{"courseCode":"BIL 421","courseTitle":"Machine Learning","instructor":"Instructor B (synthetic)","classroom":"B-104","day":"MONDAY","startTime":"10:30","endTime":"12:20"}],"isSimulated":true,"isStale":false,"status":"LIVE","timestamp":"2026-11-23T06:00:43.057Z"}},{"name":"get_shuttle_schedule","response":{"data":{"routeId":"MAIN_RING","routeName":"Ana Ring Hattı (Kampüs – Metro – Yurtlar)","nextDepartures":["09:15","09:30","09:45"],"activeVehicles":3,"lastUpdated":"2026-11-23T06:00:43.066Z"},"isSimulated":true,"isStale":false,"status":"LIVE","timestamp":"2026-11-23T06:00:43.067Z"}},{"name":"get_cafeteria_menu","response":{"data":{"date":"2026-11-23","available":true,"lunch":{"soup":"Domates Çorbası","mainDish":"Etli Kuru Fasulye","vegOption":"Mantarlı Bulgur Pilavı","sideDish":"Pirinç Pilavı","calories":1060,"allergens":["gluten","milk"]},"dinner":{"soup":"Sebze Çorbası","mainDish":"Etli Nohut","sideDish":"Şehriyeli Pilav","calories":770}},"isSimulated":true,"isStale":false,"status":"LIVE","timestamp":"2026-11-23T06:00:43.072Z"}}]}],"tools":[{"name":"get_cafeteria_menu","description":"Retrieves daily cafeteria menu and nutritional details including lunch, dinner, calorie counts, and availability for a given ISO date (FR-03).","parameters":{"type":"object","properties":{"date":{"type":"string","pattern":"^\\d{4}-\\d{2}-\\d{2}$","description":"Target date in ISO format (YYYY-MM-DD). Defaults to the current date if omitted."}}}},{"name":"get_shuttle_schedule","description":"Retrieves live and upcoming scheduled departure times for campus shuttle rings (MAIN_RING, METRO_LINE, DORMITORY_LINE) (FR-04).","parameters":{"type":"object","properties":{"route":{"type":"string","enum":["MAIN_RING","METRO_LINE","DORMITORY_LINE"],"description":"Shuttle ring route identifier. Allowed values: MAIN_RING, METRO_LINE, DORMITORY_LINE. Defaults to MAIN_RING."}}}},{"name":"get_library_occupancy","description":"Retrieves real-time library seat occupancy metrics and study floor availability (FLOOR_1, FLOOR_2, FLOOR_3, or ALL) (FR-05).","parameters":{"type":"object","properties":{"floor":{"type":"string","enum":["FLOOR_1","FLOOR_2","FLOOR_3","ALL"],"description":"Study floor selector. Allowed values: FLOOR_1, FLOOR_2, FLOOR_3, ALL. Defaults to ALL."}}}},{"name":"get_course_schedule","description":"Retrieves the personal daily academic course schedule for the authenticated student for a given day (FR-06). Requires verified student session context.","parameters":{"type":"object","properties":{"day":{"type":"string","description":"Day of week filter (e.g. TODAY, MONDAY, TUESDAY). Defaults to TODAY."}}}}]}}
+[agent-outbound] {"timestamp":"2026-11-22T14:50:56.462Z","provider":"gemini","isFake":false,"round":0,"request":{"systemInstruction":"You are the campus assistant of a university. Answer the student in the language of the question (Turkish or English). Use the provided tools to fetch campus data; call each tool at most once and only if the question needs it. Base every statement strictly on tool results. Never invent times, dishes, rooms or numbers. If a tool failed or returned nothing, say so plainly instead of guessing. When a result has isSimulated=true, state briefly that the data is synthetic. When a result has isStale=true, warn that the data may be out of date. Tool arguments never contain personal identifiers; the system resolves the signed-in student itself. Keep the answer short and practical.","turns":[{"role":"user","text":"10:30 dersimden sonra ringe yetişir miyim, bugün yemekte ne var?"}],"tools":[{"name":"get_cafeteria_menu","description":"Retrieves daily cafeteria menu and nutritional details including lunch, dinner, calorie counts, and availability for a given ISO date (FR-03).","parameters":{"type":"object","properties":{"date":{"type":"string","pattern":"^\\d{4}-\\d{2}-\\d{2}$","description":"Target date in ISO format (YYYY-MM-DD). Defaults to the current date if omitted."}}}},{"name":"get_shuttle_schedule","description":"Retrieves live and upcoming scheduled departure times for campus shuttle rings (MAIN_RING, METRO_LINE, DORMITORY_LINE) (FR-04).","parameters":{"type":"object","properties":{"route":{"type":"string","enum":["MAIN_RING","METRO_LINE","DORMITORY_LINE"],"description":"Shuttle ring route identifier. Allowed values: MAIN_RING, METRO_LINE, DORMITORY_LINE. Defaults to MAIN_RING."}}}},{"name":"get_library_occupancy","description":"Retrieves real-time library seat occupancy metrics and study floor availability (FLOOR_1, FLOOR_2, FLOOR_3, or ALL) (FR-05).","parameters":{"type":"object","properties":{"floor":{"type":"string","enum":["FLOOR_1","FLOOR_2","FLOOR_3","ALL"],"description":"Study floor selector. Allowed values: FLOOR_1, FLOOR_2, FLOOR_3, ALL. Defaults to ALL."}}}},{"name":"get_course_schedule","description":"Retrieves the personal daily academic course schedule for the authenticated student for a given day (FR-06). Requires verified student session context.","parameters":{"type":"object","properties":{"day":{"type":"string","description":"Day of week filter (e.g. TODAY, MONDAY, TUESDAY). Defaults to TODAY."}}}}]}}
+[agent-outbound] {"timestamp":"2026-11-22T14:50:57.579Z","provider":"gemini","isFake":false,"round":1,"request":{"systemInstruction":"You are the campus assistant of a university. Answer the student in the language of the question (Turkish or English). Use the provided tools to fetch campus data; call each tool at most once and only if the question needs it. Base every statement strictly on tool results. Never invent times, dishes, rooms or numbers. If a tool failed or returned nothing, say so plainly instead of guessing. When a result has isSimulated=true, state briefly that the data is synthetic. When a result has isStale=true, warn that the data may be out of date. Tool arguments never contain personal identifiers; the system resolves the signed-in student itself. Keep the answer short and practical.","turns":[{"role":"user","text":"10:30 dersimden sonra ringe yetişir miyim, bugün yemekte ne var?"},{"role":"model","functionCalls":[{"name":"get_course_schedule","args":{"day":"TODAY"},"thoughtSignature":"Eo4BCosBAWkUfRNn1yFSZn9uYyFitIGQ26LjT45LOIWlwuVRedJTdM/4j8as2SuHV5XtztonMmUx2b/cjwnYknegAfrI8ZUmi9CqgV7kSE6Rd0IKrjcf7DH9w98ePlOoEXNcrdEfzl10iLz6BQ/L7sWIXSBDvXj1wrtjSK4/9cu6LGy6hENYuXwCM2MqQHTO+Q=="},{"name":"get_shuttle_schedule","args":{"route":"MAIN_RING"}},{"name":"get_cafeteria_menu","args":{}}]},{"role":"tool","results":[{"name":"get_course_schedule","response":{"data":[{"courseCode":"BIL 461","courseTitle":"Database Management Systems","instructor":"Instructor F (synthetic)","classroom":"TM-210","day":"MONDAY","startTime":"08:30","endTime":"10:20"},{"courseCode":"BIL 421","courseTitle":"Machine Learning","instructor":"Instructor B (synthetic)","classroom":"B-104","day":"MONDAY","startTime":"10:30","endTime":"12:20"}],"isSimulated":true,"isStale":false,"status":"CACHE_HIT","timestamp":"2026-11-23T06:00:43.057Z"}},{"name":"get_shuttle_schedule","response":{"data":{"routeId":"MAIN_RING","routeName":"Ana Ring Hattı (Kampüs – Metro – Yurtlar)","nextDepartures":["09:15","09:30","09:45"],"activeVehicles":3,"lastUpdated":"2026-11-23T06:04:55.703Z"},"isSimulated":true,"isStale":false,"status":"LIVE","timestamp":"2026-11-23T06:04:55.704Z"}},{"name":"get_cafeteria_menu","response":{"data":{"date":"2026-11-23","available":true,"lunch":{"soup":"Domates Çorbası","mainDish":"Etli Kuru Fasulye","vegOption":"Mantarlı Bulgur Pilavı","sideDish":"Pirinç Pilavı","calories":1060,"allergens":["gluten","milk"]},"dinner":{"soup":"Sebze Çorbası","mainDish":"Etli Nohut","sideDish":"Şehriyeli Pilav","calories":770}},"isSimulated":true,"isStale":false,"status":"CACHE_HIT","timestamp":"2026-11-23T06:00:43.072Z"}}]}],"tools":[{"name":"get_cafeteria_menu","description":"Retrieves daily cafeteria menu and nutritional details including lunch, dinner, calorie counts, and availability for a given ISO date (FR-03).","parameters":{"type":"object","properties":{"date":{"type":"string","pattern":"^\\d{4}-\\d{2}-\\d{2}$","description":"Target date in ISO format (YYYY-MM-DD). Defaults to the current date if omitted."}}}},{"name":"get_shuttle_schedule","description":"Retrieves live and upcoming scheduled departure times for campus shuttle rings (MAIN_RING, METRO_LINE, DORMITORY_LINE) (FR-04).","parameters":{"type":"object","properties":{"route":{"type":"string","enum":["MAIN_RING","METRO_LINE","DORMITORY_LINE"],"description":"Shuttle ring route identifier. Allowed values: MAIN_RING, METRO_LINE, DORMITORY_LINE. Defaults to MAIN_RING."}}}},{"name":"get_library_occupancy","description":"Retrieves real-time library seat occupancy metrics and study floor availability (FLOOR_1, FLOOR_2, FLOOR_3, or ALL) (FR-05).","parameters":{"type":"object","properties":{"floor":{"type":"string","enum":["FLOOR_1","FLOOR_2","FLOOR_3","ALL"],"description":"Study floor selector. Allowed values: FLOOR_1, FLOOR_2, FLOOR_3, ALL. Defaults to ALL."}}}},{"name":"get_course_schedule","description":"Retrieves the personal daily academic course schedule for the authenticated student for a given day (FR-06). Requires verified student session context.","parameters":{"type":"object","properties":{"day":{"type":"string","description":"Day of week filter (e.g. TODAY, MONDAY, TUESDAY). Defaults to TODAY."}}}}]}}
+
+## Checks on the mcp-server log of these runs
+- occurrences of the student id in the whole mcp-server log: 0
 - occurrences of the raw JWT: 0
 - occurrences of the Gemini API key: 0
-- occurrences of the test user's name 'Demo Student' / e-mail 'demo@example.test' in the provider requests: 0 / 0
+- occurrences of the test user's name / e-mail in the provider requests: 0 / 0
 - provider request lines with isFake true: 0
-- identity keys (studentId/userId/email/name) among tool_call arguments: 0
+- tool_call lines: 6 (expected 6 = 3 tools x 2 runs); identity keys among their arguments: 0
 
 ## Limits
 - The answer text is produced by the model from synthetic (mock) data; the answer says so. Its quality is not an acceptance criterion here.
 - The outbound lines contain the opaque Gemini thoughtSignature token (no personal data).
-- Earlier request of the same session (failed because of the missing egress network) is not part of this file.
+- Run through curl, not the browser, and not by the QA owner.
