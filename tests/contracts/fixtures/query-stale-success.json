@@ -1,0 +1,40 @@
+{
+  "ok": true,
+  "toolName": "get_library_occupancy",
+  "data": {
+    "timestamp": "2026-11-23T06:00:00.000Z",
+    "isSimulated": true,
+    "totalCapacity": 300,
+    "totalOccupied": 101,
+    "floors": [
+      {
+        "floorId": "FLOOR_1",
+        "name": "Zemin Kat - Genel Çalışma & Danışma",
+        "occupiedSeats": 25,
+        "maxSeats": 100,
+        "isQuietArea": false
+      },
+      {
+        "floorId": "FLOOR_2",
+        "name": "1. Kat - Bireysel Çalışma & Kitaplık",
+        "occupiedSeats": 45,
+        "maxSeats": 120,
+        "isQuietArea": false
+      },
+      {
+        "floorId": "FLOOR_3",
+        "name": "2. Kat - Sessiz Çalışma Salonu",
+        "occupiedSeats": 31,
+        "maxSeats": 80,
+        "isQuietArea": true
+      }
+    ]
+  },
+  "meta": {
+    "isSimulated": true,
+    "isStale": true,
+    "source": "STALE",
+    "timestamp": "2026-11-23T06:00:00.000Z",
+    "durationMs": 0
+  }
+}

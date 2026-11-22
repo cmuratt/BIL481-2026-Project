@@ -1,0 +1,32 @@
+{
+  "ok": true,
+  "toolName": "get_cafeteria_menu",
+  "data": {
+    "date": "2026-11-23",
+    "available": true,
+    "lunch": {
+      "soup": "Domates Çorbası",
+      "mainDish": "Etli Kuru Fasulye",
+      "vegOption": "Mantarlı Bulgur Pilavı",
+      "sideDish": "Pirinç Pilavı",
+      "calories": 1060,
+      "allergens": [
+        "gluten",
+        "milk"
+      ]
+    },
+    "dinner": {
+      "soup": "Sebze Çorbası",
+      "mainDish": "Etli Nohut",
+      "sideDish": "Şehriyeli Pilav",
+      "calories": 770
+    }
+  },
+  "meta": {
+    "isSimulated": true,
+    "isStale": false,
+    "source": "LIVE",
+    "timestamp": "2026-11-23T06:00:00.000Z",
+    "durationMs": 0
+  }
+}

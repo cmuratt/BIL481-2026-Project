@@ -5,17 +5,21 @@
  *   CAFETERIA_CONNECTOR_MODE, SHUTTLE_CONNECTOR_MODE, LIBRARY_CONNECTOR_MODE, SCHEDULE_CONNECTOR_MODE
  *   UPSTREAM_TIMEOUT_MS
  *   CACHE_TTL_CAFETERIA, CACHE_TTL_SHUTTLE, CACHE_TTL_LIBRARY, CACHE_TTL_COURSE_SCHEDULE
- * One optional variable is introduced by the connector tier:
+ * Optional variables of the connector tier (API Contract v1.1 §7):
  *   CONNECTOR_MOCK_SEED (default '481-FALL-2026')
+ *   CONNECTOR_FIXED_NOW (unset = real Türkiye time; acceptance runs only, see clock.ts)
+ *   REDIS_URL           (read by cache/redisClient.ts, not here)
  *
  * Configuration is read once when the connector set is created, so switching a mode
  * only requires changing the variable and restarting the process (FR-12 acceptance).
  */
 
 import { CACHE_TTL } from '@campus-orchestrator/shared';
+import { readFixedNow } from './clock.js';
+import { ConnectorConfigError, type EnvSource } from './configError.js';
 import type { ConnectorMode, ConnectorName } from './types.js';
 
-export type EnvSource = Record<string, string | undefined>;
+export { ConnectorConfigError, type EnvSource } from './configError.js';
 
 export const CONNECTOR_MODE_ENV: Readonly<Record<ConnectorName, string>> = {
   cafeteria: 'CAFETERIA_CONNECTOR_MODE',
@@ -53,18 +57,16 @@ export const CACHE_RETENTION_MULTIPLIER = 3;
 export const CIRCUIT_FAILURE_THRESHOLD = 3;
 export const CIRCUIT_COOLDOWN_MS = 60_000;
 
-export class ConnectorConfigError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'ConnectorConfigError';
-  }
-}
-
 export interface ConnectorRuntimeConfig {
   modes: Record<ConnectorName, ConnectorMode>;
   ttlSeconds: Record<ConnectorName, number>;
   mockSeed: string;
   upstreamTimeoutMs: number;
+  /**
+   * Normalised ISO instant from `CONNECTOR_FIXED_NOW`, or null when the variable is unset (real time).
+   * Acceptance runs only; see clock.ts for the advancing-anchor semantics.
+   */
+  fixedNow: string | null;
 }
 
 /** Reads the mode of one connector. Missing → 'mock' (safe default); any other value fails fast. */
@@ -106,5 +108,6 @@ export function loadConnectorConfig(env: EnvSource = process.env): ConnectorRunt
     ttlSeconds,
     mockSeed: seed && seed.length > 0 ? seed : DEFAULT_MOCK_SEED,
     upstreamTimeoutMs: readPositiveInteger(env, UPSTREAM_TIMEOUT_ENV, DEFAULT_UPSTREAM_TIMEOUT_MS),
+    fixedNow: readFixedNow(env),
   };
 }

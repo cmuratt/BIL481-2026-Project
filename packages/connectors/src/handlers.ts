@@ -53,6 +53,38 @@ export interface ConnectorToolResponse<T = unknown> extends MCPToolResponse<T> {
   message?: string;
 }
 
+/**
+ * Response metadata of one connector-backed tool call (A-06, API Contract v1.1 §3.2 `meta`).
+ * The same five fields are written into the MCP `content[0]` JSON block, which is where the gateway
+ * adapter reads them (Contract §3.2 "Gateway adapter extraction rule"); the MCP HTTP transport does
+ * not forward extra top-level result fields.
+ * - `source`: LIVE = fresh connector execution (may be synthetic), CACHE_HIT, STALE. Never "MOCK".
+ * - `isSimulated`: true when a mock connector produced the data; independent of `source`.
+ * - `timestamp`: when the data was fetched from the connector (for STALE: the original cache time).
+ * - `durationMs`: measured duration of the connector-tier call (cache lookup + upstream + fallback).
+ */
+export interface ConnectorResponseMeta {
+  source: Exclude<ResultSource, 'ERROR'>;
+  isSimulated: boolean;
+  isStale: boolean;
+  timestamp: string;
+  durationMs: number;
+}
+
+/** Maps a successful executor result to the contract metadata. Throws for ERROR results. */
+export function toResponseMeta(result: ResilientResult<unknown>, isSimulated: boolean): ConnectorResponseMeta {
+  if (result.source === 'ERROR') {
+    throw new Error('toResponseMeta() is only defined for successful results');
+  }
+  return {
+    source: result.source,
+    isSimulated,
+    isStale: result.isStale,
+    timestamp: result.timestamp,
+    durationMs: result.durationMs,
+  };
+}
+
 export type ConnectorToolHandler = (args: any, auth: AuthContext) => Promise<ConnectorToolResponse>;
 
 export interface ConnectorHandlerDeps {
@@ -62,7 +94,7 @@ export interface ConnectorHandlerDeps {
   clock?: Clock;
 }
 
-function toEnvelope<T>(result: ResilientResult<T>, isSimulated: boolean): ConnectorToolResponse<T> {
+function toEnvelope<T>(result: ResilientResult<T>, connectorIsMock: boolean): ConnectorToolResponse<T> {
   if (result.source === 'ERROR' || result.data === null) {
     const message = result.failure?.message ?? 'The campus service is currently unavailable.';
     return {
@@ -76,23 +108,17 @@ function toEnvelope<T>(result: ResilientResult<T>, isSimulated: boolean): Connec
       durationMs: result.durationMs,
     };
   }
+  // Provenance stored with the cached value wins: mock data stays labelled synthetic even when it is
+  // served as STALE after the connector was switched to live mode.
+  const meta = toResponseMeta(result, result.isSimulated ?? connectorIsMock);
   return {
     isError: false,
-    source: result.source,
-    content: [
-      {
-        type: 'json',
-        data: result.data,
-        isStale: result.isStale,
-        isSimulated,
-        timestamp: result.timestamp,
-        source: result.source,
-      },
-    ],
-    isStale: result.isStale,
-    isSimulated,
-    timestamp: result.timestamp,
-    durationMs: result.durationMs,
+    source: meta.source,
+    content: [{ type: 'json', data: result.data, ...meta }],
+    isStale: meta.isStale,
+    isSimulated: meta.isSimulated,
+    timestamp: meta.timestamp,
+    durationMs: meta.durationMs,
   };
 }
 
@@ -139,6 +165,7 @@ export function createConnectorToolHandlers(deps: ConnectorHandlerDeps): Record<
       input: { date },
       cacheKey: cafeteriaCacheKey(date),
       ttlSeconds: ttlSeconds.cafeteria,
+      isSimulated: connectors.cafeteria.isMock,
     });
     return toEnvelope(result, connectors.cafeteria.isMock);
   });
@@ -151,6 +178,7 @@ export function createConnectorToolHandlers(deps: ConnectorHandlerDeps): Record<
       input: { route },
       cacheKey: shuttleCacheKey(route),
       ttlSeconds: ttlSeconds.shuttle,
+      isSimulated: connectors.shuttle.isMock,
     });
     if (result.data !== null && result.source !== 'LIVE') {
       // Cached departures may have passed since they were stored; FR-04 requires strictly future times.
@@ -171,6 +199,7 @@ export function createConnectorToolHandlers(deps: ConnectorHandlerDeps): Record<
       input: { floor },
       cacheKey: libraryCacheKey(floor),
       ttlSeconds: ttlSeconds.library,
+      isSimulated: connectors.library.isMock,
     });
     return toEnvelope(result, connectors.library.isMock);
   });
@@ -188,6 +217,7 @@ export function createConnectorToolHandlers(deps: ConnectorHandlerDeps): Record<
       context: auth,
       cacheKey: courseScheduleCacheKey(studentId, day),
       ttlSeconds: ttlSeconds.courseSchedule,
+      isSimulated: connectors.courseSchedule.isMock,
     });
     return toEnvelope(result, connectors.courseSchedule.isMock);
   });

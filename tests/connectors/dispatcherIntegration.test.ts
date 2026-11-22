@@ -15,6 +15,7 @@ import {
   loadConnectorConfig,
   registerConnectorHandlers,
   ResilientConnectorExecutor,
+  silentEventSink,
   type CafeteriaConnector,
 } from '../../packages/connectors/src/index.js';
 import { MONDAY, SATURDAY, TestClock } from './helpers.js';
@@ -24,7 +25,7 @@ const guest: AuthContext = { role: 'GUEST' };
 
 function wire(env: Record<string, string> = {}) {
   const clock = new TestClock(`${MONDAY}T12:35`);
-  const runtime = createConnectorRuntime({ env, clock: clock.now });
+  const runtime = createConnectorRuntime({ env, clock: clock.now, onEvent: silentEventSink });
   const dispatcher = new ToolDispatcher();
   registerConnectorHandlers(dispatcher, runtime);
   return { clock, runtime, dispatcher };
