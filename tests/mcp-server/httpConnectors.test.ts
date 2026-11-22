@@ -55,6 +55,24 @@ describe('MCP HTTP server backed by connectors (M-02)', () => {
     expect(health.runtime.connectorModes.library).toBe('mock');
   });
 
+  it('reports the configured cache backend, not a fixed value, on /health', async () => {
+    // Port 1 is unreachable: only the configuration is under test, no Redis is needed.
+    const connectorRuntime = createConnectorRuntime({
+      env: { REDIS_URL: 'redis://127.0.0.1:1' },
+      onCacheWarning: () => {},
+      onEvent: () => {},
+    });
+    try {
+      const server = await startHttpServer(0, '127.0.0.1', new ToolDispatcher(), { connectorRuntime });
+      servers.push(server);
+      const base = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+      const health = await (await fetch(`${base}/health`)).json();
+      expect(health.runtime).toMatchObject({ source: 'connectors', cache: 'redis' });
+    } finally {
+      await connectorRuntime.close();
+    }
+  });
+
   it('serves all four tools with the full metadata set in the json block (M-01, contract §3.2)', async () => {
     const { url } = await boot();
     const calls: Array<[string, unknown, Record<string, string>]> = [
