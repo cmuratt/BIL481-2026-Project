@@ -1,0 +1,114 @@
+AT-04 Live Chrome + Real Gemini Execution Trace (GIT_SHA=18d2e309ba154d4b61648c0f6252a66c72ea992e)
+Executed at: 2026-11-22T16:02:30.582Z
+mcp-server /health: cache=redis, agent.provider=gemini
+Test clock: CONNECTOR_FIXED_NOW=2026-11-23T09:00:00+03:00 (MCP started 2026-11-22T16:02:08.654Z)
+Cache reset: 2026-11-22T16:02:10.530Z
+
+--- Step 4 Stream Metrics & UI Badges ---
+sawStreamingState=true, firstAnswerRenderMs=7664ms, doneUiMs=7664ms
+SSE counts: tool=3, token=23, done=1, error=0 (first token index=3 < done index=26)
+UI Badges: ["Ders programı Yeni sorgu · 3 ms","Ring seferleri Önbellekten · 1 ms","Yemekhane menüsü Yeni sorgu · 1 ms"]
+
+--- Step 4 Final Done Answer ---
+*Not: Sunulan veriler sentetiktir.*
+
+Bugünkü ders programınıza göre saat 10:30'da dersiniz görünmüyor. Kayıtlı dersiniz **13:30 - 15:20** saatleri arasında (BIL 441 Computer Graphics, TM-105). Ana ring seferleri için sonraki hareket saatleri: **09:15, 09:30, 09:45**.
+
+Bugünkü yemekhane menüsü:
+* **Öğle Yemeği (1060 kcal):** Domates Çorbası, Etli Kuru Fasulye, Pirinç Pilavı, Mantarlı Bulgur Pilavı (Vejetaryen). (Alerjenler: gluten, süt)
+* **Akşam Yemeği (770 kcal):** Sebze Çorbası, Etli Nohut, Şehriyeli Pilav.
+
+--- Step 5 Agent Tool Calls ([agent-tool]) ---
+mcp-server-1  | [agent-tool] {"event":"tool_call","timestamp":"2026-11-22T16:02:18.029Z","round":0,"toolName":"get_course_schedule","arguments":{"day":"TODAY"},"status":"LIVE","durationMs":3}
+mcp-server-1  | [agent-tool] {"event":"tool_call","timestamp":"2026-11-22T16:02:18.032Z","round":0,"toolName":"get_shuttle_schedule","arguments":{"route":"MAIN_RING"},"status":"CACHE_HIT","durationMs":1}
+mcp-server-1  | [agent-tool] {"event":"tool_call","timestamp":"2026-11-22T16:02:18.034Z","round":0,"toolName":"get_cafeteria_menu","arguments":{},"status":"LIVE","durationMs":1}
+
+--- Step 6 Tool Results Sent to Gemini (Round 1) ---
+{
+  "role": "tool",
+  "results": [
+    {
+      "name": "get_course_schedule",
+      "response": {
+        "data": [
+          {
+            "courseCode": "BIL 441",
+            "courseTitle": "Computer Graphics",
+            "instructor": "Instructor C (synthetic)",
+            "classroom": "TM-105",
+            "day": "MONDAY",
+            "startTime": "13:30",
+            "endTime": "15:20"
+          }
+        ],
+        "isSimulated": true,
+        "isStale": false,
+        "status": "LIVE",
+        "timestamp": "2026-11-23T06:00:26.578Z"
+      }
+    },
+    {
+      "name": "get_shuttle_schedule",
+      "response": {
+        "data": {
+          "routeId": "MAIN_RING",
+          "routeName": "Ana Ring Hattı (Kampüs – Metro – Yurtlar)",
+          "nextDepartures": [
+            "09:15",
+            "09:30",
+            "09:45"
+          ],
+          "activeVehicles": 3,
+          "lastUpdated": "2026-11-23T06:00:19.675Z"
+        },
+        "isSimulated": true,
+        "isStale": false,
+        "status": "CACHE_HIT",
+        "timestamp": "2026-11-23T06:00:19.676Z"
+      }
+    },
+    {
+      "name": "get_cafeteria_menu",
+      "response": {
+        "data": {
+          "date": "2026-11-23",
+          "available": true,
+          "lunch": {
+            "soup": "Domates Çorbası",
+            "mainDish": "Etli Kuru Fasulye",
+            "vegOption": "Mantarlı Bulgur Pilavı",
+            "sideDish": "Pirinç Pilavı",
+            "calories": 1060,
+            "allergens": [
+              "gluten",
+              "milk"
+            ]
+          },
+          "dinner": {
+            "soup": "Sebze Çorbası",
+            "mainDish": "Etli Nohut",
+            "sideDish": "Şehriyeli Pilav",
+            "calories": 770
+          }
+        },
+        "isSimulated": true,
+        "isStale": false,
+        "status": "LIVE",
+        "timestamp": "2026-11-23T06:00:26.584Z"
+      }
+    }
+  ]
+}
+
+--- Step 7 Outbound Provider Log Summary ([agent-outbound]) ---
+round=0, provider=gemini, isFake=false, timestamp=2026-11-22T16:02:11.711Z
+round=1, provider=gemini, isFake=false, timestamp=2026-11-22T16:02:18.034Z
+Zero raw JWT/key/PII occurrences across 8 mcp-server log lines: VERIFIED
+
+--- Step 8 & 9 Security Checks ---
+Forged header on query/schedule deep-equal=true
+Forged header on chat/stream -> HTTP 200 done.isComplete=true, 0 raw JWT in mcp-server logs
+mcp-server Ports={"3001/tcp":null}; host POST http://127.0.0.1:3001/mcp -> FAILED (ECONNREFUSED)
+Expired JWT -> HTTP 401 AUTHENTICATION_REQUIRED; Tampered JWT -> HTTP 401 AUTHENTICATION_REQUIRED
+MCP log lines before/after Step 9: 22 -> 22
+Step 10 conditional (>5s slow indicator): OBSERVED (7664 ms >= 5000 ms; slow notice rendered=true)

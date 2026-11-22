@@ -9,7 +9,7 @@
 | **Group Name** | Group-ASYM |
 | **QA Lead & Primary Author** | **Ahmet Sefa Efendioğlu** (241101066) — `@Sefa-Efendioglu` |
 | **Contributors to this Document** | **Ahmet Sefa Efendioğlu** (Lead Author, QA Strategy, Metrics, Test Cases, V&V Alignment, Bug Tracking), **Murat Can Işık** (MCP & Agent Test Alignment), **Yunus Emre Biçer** (Frontend, Usability & AT Test Alignment), **Arda Çelik** (Connector & Reliability Test Alignment) |
-| **Document Version / Date** | Version 1.4 (PA3 Full 4-Service V&V Verification, `AT-01..03` PASS & `NFR-01/02` Measured), 22 November 2026 *(v1.0 PA2 baseline: 15 November 2026)* |
+| **Document Version / Date** | Version 1.5 (PA3 Complete V&V Verification, `AT-01..04` `4/4 PASS`, Live Smoke & `NFR-01/02` Measured), 22 November 2026 *(v1.0 PA2 baseline: 15 November 2026)* |
 | **Repository Filepath** | `docs/QA_Plan.md` |
 | **Related Documents** | `docs/Requirements_Document.md`, `docs/Project_Plan_Document.md`, `docs/Design_Document.md`, `docs/assignment3/Acceptance_Tests_and_Criteria.md`, `docs/assignment3/Test_Results_Report.md` |
 
@@ -98,8 +98,8 @@ In line with IEEE V&V principles and Project Assignment 3, testing distinguishes
 | :--- | :--- | :--- | :--- |
 | **Unit** | Pure logic, Zod schemas, JWT verification, intent router, circuit breaker, in-memory cache/rate limiter, PII scrubber | `routeStudentQuery*.test.ts`, `auth.test.ts`, `dispatcher.test.ts`, `jwtAuth.test.ts`, `agentOrchestrator.test.ts`, `piiScrubber.test.ts`, `tests/connectors/*` | **Executed / Passed** (part of `366` passing tests across `33` files; `8` real-Redis tests skipped without `REDIS_TEST_URL`, passed in `PR #31`) |
 | **Integration / Contract** | Inter-tier HTTP contracts (`POST /api/v1/query`, `POST /api/v1/chat/stream`), RESP2 Redis rate limiter, `ToolDispatcher` + connectors, 4-service Compose (`web` + `api-gateway` + `mcp-server` + `redis`) | `queryProxy.test.ts`, `chatStreamProxy.test.ts`, `rateLimiter.test.ts`, `httpConnectors.test.ts`, `compose-4service-egress-smoke.txt`, `nfr-e2e-latency-cache-benchmark.txt` | **Executed / Passed** (`4/4` healthy services, `S-06` isolation, Redis `cache:*` & rate limit `429`, `NFR-01` cached P95 `44.41 ms`, `NFR-02` `99.4%` hit ratio) |
-| **System / E2E** | Browser → Next.js → Gateway → MCP → Connector/Agent → Redis full chain | Chrome CDP `AT-01..03` + `AT-04` security/UI checks (`sefa-security-checks.txt`); supporting Gemini curl (`PR #45`) | **Core & Security Executed / Passed**; real Gemini browser chat stream blocked locally only by missing `.env` `GEMINI_API_KEY` |
-| **Acceptance (Validation)** | Student-facing completion of `UC-01`..`UC-04` against measurable `AC-01.x`..`AC-04.x` criteria | `AT-01`, `AT-02`, `AT-03`, `AT-04` (`docs/assignment3/Test_Results_Report.md` v0.9) | **`AT-01..AT-03 PASS` (`3/4`)**; **`AT-04 BLOCKED` (`1/4`)** awaiting local `GEMINI_API_KEY` for Steps 4–7 |
+| **System / E2E** | Browser → Next.js → Gateway → MCP → Connector/Agent → Redis full chain | Chrome CDP `AT-01..04` (`at04-live-browser-trace.txt`, `sefa-security-checks.txt`) + `run-acceptance-harness.mjs --mode=smoke` (`gateway-live-smoke.txt`) | **Executed / Passed** (real Gemini browser SSE `AT-04` + `--mode=smoke` `11/11 PASS` on 4-service Compose) |
+| **Acceptance (Validation)** | Student-facing completion of `UC-01`..`UC-04` against measurable `AC-01.x`..`AC-04.x` criteria | `AT-01`, `AT-02`, `AT-03`, `AT-04` (`docs/assignment3/Test_Results_Report.md` v1.0) | **`AT-01..AT-04 PASS` (`4/4`)** (full live Chrome + real Gemini 4-service Compose acceptance complete) |
 
 The project employs a layered testing pyramid designed to validate functionality from isolated units to integrated multi-tier workflows:
 
@@ -402,8 +402,8 @@ flowchart LR
   - Outbound prompt intercepted at the network boundary contains `<STUDENT_ID>` and `<STUDENT_NAME>` placeholders; 0 cleartext occurrences of "Ahmet Sefa Efendioğlu" or "241101066".
   - Agent plans and invokes tools in sequence: `get_course_schedule` → `get_shuttle_schedule` → `get_cafeteria_menu`.
   - Final response correlates course end time (e.g., 12:20) with next shuttle departure (e.g., 12:35) and summarizes lunch menu.
-- **Actual Result (Phase 2 / PA3 Update):** **Unit/Stub & Supporting Curl Passed / Formal QA Browser E2E Blocked (Missing Local `GEMINI_API_KEY`).** `AgentOrchestrator`, `GeminiProvider`, and fail-closed `PiiScrubber` suites pass (`tests/mcp-server/`). On `dev` @ `b0cc12d` (`PR #45`), Murat's clean 4-service Compose curl run (`gateway-agent-gemini-compose-smoke.txt` v2) invoked `get_course_schedule`, `get_shuttle_schedule`, and `get_cafeteria_menu` via real Gemini with `0` student ID, raw JWT, or API key leaks. Formal QA browser E2E (`AT-04` Steps 4–7) awaits `GEMINI_API_KEY` in local `.env`.
-- **Status:** **Unit/Stub & Supporting Curl Pass (Browser E2E Blocked — Missing Local Key)**
+- **Actual Result (Phase 2 / PA3 Update):** **Pass (Unit/Stub, `PR #45` Curl & Live Chrome + Real Gemini `AT-04` Verified).** `AgentOrchestrator`, `GeminiProvider`, and fail-closed `PiiScrubber` suites pass (`tests/mcp-server/`). In addition to Murat's `PR #45` Compose curl smoke (`gateway-agent-gemini-compose-smoke.txt`), formal QA live Chrome + 4-service Compose `AT-04` execution (`at04-live-browser-trace.txt`, `gateway-live-smoke.txt` `11/11 PASS`) invoked `get_course_schedule`, `get_shuttle_schedule`, and `get_cafeteria_menu` via real Gemini (`round=0` and `round=1`, `provider=gemini`, `isFake=false`, `3` `tool` / `23` `token` / `1` `done` SSE events in `7664 ms`) with `0` student ID, raw JWT, API key, or PII leaks across `mcp-server` outbound/tool logs.
+- **Status:** **Pass (Unit/Stub, `PR #45` Curl & Live Chrome + Real Gemini `AT-04` Verified)**
 
 ---
 
@@ -495,7 +495,7 @@ The table below maps each of the 4 defined Quality Factors and the 8 Core Test C
 | :--- | :--- | :--- | :---: | :---: | :---: | :---: |
 | **QF-1: Performance** | MCP Server & Gateway | NFR-01 | All UCs | `AT-01`..`AT-04` | Measurement (M) | **Pass (Burst Benchmark)** — `44.41 ms` cached P95 (`500` reqs, `nfr-e2e-latency-cache-benchmark.txt`) |
 | **QF-2: Reliability** | Redis Cache & Circuit Breaker | NFR-03, FR-10, FR-11 | UC-01..UC-03 | `AT-01`..`AT-03` | Test (T) | **Pass** — Unit/Redis + live `AT-03` Step 7 `STALE` fallback verified |
-| **QF-3: Security** | Fastify Gateway & PII Filter | NFR-05, FR-07, FR-14 | UC-04 | `AT-04` | Test (T), Inspection (I) | **Gateway Pass; Agent PII Unit + PR #45 Curl Verified** (`AT-04` browser pending key) |
+| **QF-3: Security** | Fastify Gateway & PII Filter | NFR-05, FR-07, FR-14 | UC-04 | `AT-04` | Test (T), Inspection (I) | **Pass** (Gateway + PII Unit + `PR #45` Curl + Live Chrome `AT-04`, `0` PII/JWT/key leaks) |
 | **QF-4: Usability** | Next.js Dual-View Client | NFR-06, NFR-07, FR-18 | UC-01 to UC-04 | `AT-01`..`AT-04` | Demonstration (D), Inspection | **Mobile/Guest Layout Pass (`AT-01` 375 px); 5-User SUS Not Evaluated** |
 | **TC-01** | Dining Connector & Tool | FR-01, FR-03 | UC-01 | `AT-01` | Unit / Integration / Chrome E2E (T) | **Pass** (Vitest + Live `AT-01`) |
 | **TC-02** | Shuttle Connector & Tool | FR-01, FR-04 | UC-02 | `AT-02` | Unit / Integration / Chrome E2E (T) | **Pass** (Vitest + Live `AT-02` incl. 22:30 empty state) |
@@ -504,9 +504,9 @@ The table below maps each of the 4 defined Quality Factors and the 8 Core Test C
 | **TC-05** | Bilingual Intent Router | FR-16 | UC-01 to UC-04 | `AT-01`..`AT-04` | Unit Benchmark / Chrome E2E (T) | **Pass** (`routeStudentQuery*.test.ts` + Live `AT-01..04`) |
 | **TC-06** | Stale Cache & Circuit Breaker | FR-09, FR-10, FR-11 | UC-01..UC-03 | `AT-01`..`AT-03` | Fault Injection / E2E (T) | **Pass** (Unit/Redis `7/7` + Live `AT-03` Step 7 `STALE`) |
 | **TC-07** | Gateway JWT & Token Stripping | FR-07, FR-08, NFR-05 | UC-04 | `AT-04` | Security Unit/Contract + 4-Service Compose (T, I) | **Pass** (`25` gateway tests + `AT-04` Steps 8, 9 + `429` Redis smoke) |
-| **TC-08** | AI Multi-Tool & PII Scrubbing | FR-13, FR-14 | UC-04 | `AT-04` | Integration / Supporting Curl (T, D) | **Unit/Stub & PR #45 Curl Pass; Formal QA Browser Pending Key** |
-| **AT-01..AT-03** | Acceptance Tests (`UC-01..03`) | FR-01, 03–05, 09, 10, 12, 15, 16, 18, 19, NFR-07 | `UC-01..03` | — | Chrome CDP + 4-Service Compose | **`PASS` (`3/3`)** — `docs/assignment3/Test_Results_Report.md` v0.9 |
-| **AT-04** | Acceptance Test (`UC-04`) | FR-01, 06, 07, 13–17, 19, NFR-05 | `UC-04` | `TC-04`, `TC-05`, `TC-07`, `TC-08` | Chrome CDP + 4-Service Compose | **`BLOCKED` (`Steps 1, 2, 3, 8, 9 PASS`; Steps 4–7 awaiting local `GEMINI_API_KEY`)** |
+| **TC-08** | AI Multi-Tool & PII Scrubbing | FR-13, FR-14 | UC-04 | `AT-04` | Integration / Chrome E2E (T, D) | **Pass** (Unit/Stub + `PR #45` Curl + Live Chrome + Real Gemini `AT-04`, `0` leaks) |
+| **AT-01..AT-03** | Acceptance Tests (`UC-01..03`) | FR-01, 03–05, 09, 10, 12, 15, 16, 18, 19, NFR-07 | `UC-01..03` | — | Chrome CDP + 4-Service Compose | **`PASS` (`3/3`)** — `docs/assignment3/Test_Results_Report.md` v1.0 |
+| **AT-04** | Acceptance Test (`UC-04`) | FR-01, 06, 07, 13–17, 19, NFR-05 | `UC-04` | `TC-04`, `TC-05`, `TC-07`, `TC-08` | Chrome CDP + 4-Service Compose | **`PASS` (`4/4` complete)** — live Chrome + real Gemini SSE + `--mode=smoke` (`11/11 PASS`) |
 
 ### 4.2 Assignment 2 Final Submission & Quality Gate Checklist
 
@@ -535,6 +535,7 @@ As Release & QA Lead, Ahmet Sefa Efendioğlu maintains the following quality gat
 | **v1.2** | 20 Nov 2026 | Ahmet Sefa Efendioğlu | Pending team review | Recorded live containerized `api-gateway` + `redis:7-alpine` smoke test results (`gateway-docker-redis-smoke.txt`) for `TC-07` / `FR-08`, while keeping `TC-06` connector Redis, `TC-04`/`TC-08` E2E, and `AT-01..04` honestly marked blocked. |
 | **v1.3** | 20 Nov 2026 | Ahmet Sefa Efendioğlu | Pending team review | Synced with `dev` (`440efd0`: `PR #18` + `PR #20` merged); updated Vitest count to 230 tests and recorded 3-service Compose (`web` + `api-gateway` + `redis`) integration & `S-06` network isolation smoke results (`compose-3service-smoke.txt`). |
 | **v1.4** | 22 Nov 2026 | Ahmet Sefa Efendioğlu | Pending team review | Synced with `dev` (`13f71d7`, incl. `PR #44` `egress` fix & `#45`); applied Arda's **TC-06** feedback (`≤ 850 ms` timeout-cutoff fallback vs `< 50 ms` open-circuit fallback); recorded `366/366` Vitest (`8` live Redis skipped), live 4-service Compose verification, `NFR-01`/`NFR-02` benchmark (`44.41 ms` cached P95, `99.4%` hit ratio), `AT-01..03 PASS`, and `AT-04` security/UI verification (Gemini browser steps blocked locally on missing `.env` `GEMINI_API_KEY`). |
+| **v1.5** | 22 Nov 2026 | Ahmet Sefa Efendioğlu | Complete (PA3 V&V Final) | Executed full live Chrome + real Gemini 4-service Compose `AT-04` (`at04-live-browser-trace.txt`, `step4-streamed-answer.png`, `0` PII/JWT/key leaks) and `run-acceptance-harness.mjs --mode=smoke` (`11/11 PASS`, `gateway-live-smoke.txt`); closed `AT-01..04` (`4/4 PASS`) in `Test_Results_Report.md` v1.0. |
 
 *This document constitutes the official Quality Assurance Plan deliverable for Group-ASYM in BIL 481 Software Engineering, Fall 2026, prepared under the lead authorship responsibility of Ahmet Sefa Efendioğlu.*
 

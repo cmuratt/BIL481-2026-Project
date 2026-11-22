@@ -8,12 +8,12 @@
 | **Assignment** | Project Assignment 3 — Deliverable 1: Deployment Plan |
 | **Group Name** | Group-ASYM |
 | **Document Lead & Primary Author** | **Ahmet Sefa Efendioğlu** (241101066) — `@Sefa-Efendioglu` |
-| **Document Version / Date** | **Version 1.0 (Full 4-Service Docker Compose Stack, Egress Isolation & Acceptance Environment Verified), 22 November 2026** |
+| **Document Version / Date** | **Version 1.1 (Full 4-Service Compose, Live Gateway Smoke & Real Gemini E2E Verified), 22 November 2026** |
 | **Repository Filepath** | `docs/assignment3/Deployment_Plan.md` |
-| **Verified Base Commit SHA** | `dev` @ `13f71d738a895c62d8e28293e0bf47d60b01e1d5` (`PR #22`, `#26`–`#45` merged) |
-| **Related Documents** | `docs/assignment3/contracts/API_CONTRACT.md` (v1.1), `docs/assignment3/Acceptance_Tests_and_Criteria.md` (v0.6), `docs/assignment3/Test_Results_Report.md` (v0.9), `docs/QA_Plan.md` (v1.4) |
+| **Verified Base Commit SHA** | `dev` @ `13f71d738a895c62d8e28293e0bf47d60b01e1d5` (`AT-04` & live `--mode=smoke` run on `18d2e309ba154d4b61648c0f6252a66c72ea992e`) |
+| **Related Documents** | `docs/assignment3/contracts/API_CONTRACT.md` (v1.1), `docs/assignment3/Acceptance_Tests_and_Criteria.md` (v0.6), `docs/assignment3/Test_Results_Report.md` (v1.0), `docs/QA_Plan.md` (v1.5) |
 
-> **Verification Summary (v1.0):** All four containerized services (`redis`, `mcp-server`, `api-gateway`, `web`) in [`compose.yaml`](../../compose.yaml) build cleanly on `node:24-alpine` / `redis:7-alpine`, reach Docker `healthy`, enforce strict `S-06` network isolation (`edge`, `internal: true`, and `mcp-server`-only `egress`), and execute end-to-end queries, Redis caching, stale-if-error fallback, and sliding-window rate limiting (`compose-4service-egress-smoke.txt`, `nfr-e2e-latency-cache-benchmark.txt`, and official acceptance runs `AT-01`..`AT-03 PASS`). Local `.env` on the QA workstation does not carry `GEMINI_API_KEY` (owned by Murat per Contract §8 Q2); clean 4-service Gemini agent streaming is additionally confirmed on `13f71d7` in [`gateway-agent-gemini-compose-smoke.txt`](evidence/AT-04/gateway-agent-gemini-compose-smoke.txt) (`PR #45`).
+> **Verification Summary (v1.1):** All four containerized services (`redis`, `mcp-server`, `api-gateway`, `web`) in [`compose.yaml`](../../compose.yaml) build cleanly on `node:24-alpine` / `redis:7-alpine`, reach Docker `healthy`, enforce strict `S-06` network isolation (`edge`, `internal: true`, and `mcp-server`-only `egress`), and execute all four official acceptance workflows end-to-end (`AT-01`..`AT-04` **`4 / 4 PASS`** with real Google Gemini via gitignored local `.env`), plus live `--mode=smoke` (`11/11` PASS, [`gateway-live-smoke.txt`](evidence/deployment/gateway-live-smoke.txt)) and the `500`-request `NFR-01`/`NFR-02` benchmark ([`nfr-e2e-latency-cache-benchmark.txt`](evidence/deployment/nfr-e2e-latency-cache-benchmark.txt)).
 
 ---
 
@@ -23,10 +23,10 @@ In compliance with the Project Assignment 3 deliverables specification, contribu
 
 | Member Name | Student ID | GitHub Account | Project Role | Contribution to this Document | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Ahmet Sefa Efendioğlu** | 241101066 | `@Sefa-Efendioglu` | Gateway, Security & Release Lead | **Lead Author:** Authored `apps/api-gateway/Dockerfile`, `.dockerignore`, `compose.yaml` (incl. `egress` fix `PR #44`), Deployment Overview, Configuration Plan; verified full 4-service Compose stack, `S-06` network boundaries, Redis persistence, and `NFR-01`/`NFR-02` performance benchmark. | Completed (v1.0) |
+| **Ahmet Sefa Efendioğlu** | 241101066 | `@Sefa-Efendioglu` | Gateway, Security & Release Lead | **Lead Author:** Authored `apps/api-gateway/Dockerfile`, `.dockerignore`, `compose.yaml` (`egress` fix `PR #44`), Deployment Overview, Configuration Plan; verified full 4-service Compose stack, `S-06` network boundaries, Redis persistence, `--mode=smoke`, `NFR-01`/`NFR-02` benchmark, and `AT-01..AT-04`. | **Completed (v1.1)** |
 | **Yunus Emre Biçer** | 241101009 | `@YunusEmre113` | Web Client Lead | Delivered `apps/web/Dockerfile`, `/healthz`, standalone build, `apps/web/README.md` (`PR #18`), `/giris` login (`PR #20`), and streaming chat screen (`Y-07`, `PR #32`). | Handover merged (`#18`, `#20`, `#32`) |
-| **Murat Can Işık** | 241101013 | `@cmuratt` | MCP Server & Agent Lead | Delivered `apps/mcp-server/Dockerfile` (`M-13`, `PR #28`), connector-backed MCP runtime (`PR #26`, `#40`), `AgentOrchestrator` + Gemini + `/internal/agent/stream` (`PR #29`, `#34`, `#35`, `#39`), and MCP/env handover [`handovers/murat.md`](handovers/murat.md) (`v1.1`). | Handover merged (`#28`, `#42`, `#45`) |
-| **Arda Çelik** | 241101065 | `@ardacelik11` | Connectors & Data Lead | Delivered live Redis connector runtime (`A-02`, `PR #30`, `#31`), advancing `CONNECTOR_FIXED_NOW` (`Q3`), Redis verification commands, and [`handovers/arda.md`](handovers/arda.md) (`v1.0`). | Handover merged (`#30`, `#31`) |
+| **Murat Can Işık** | 241101013 | `@cmuratt` | MCP Server & Agent Lead | Delivered `apps/mcp-server/Dockerfile` (`M-13`, `PR #28`), connector-backed MCP runtime (`PR #26`, `#40`), `AgentOrchestrator` + Gemini + `/internal/agent/stream` (`PR #29`, `#34`, `#35`, `#39`), and [`handovers/murat.md`](handovers/murat.md). | Handover merged (`#28`, `#42`, `#45`) |
+| **Arda Çelik** | 241101065 | `@ardacelik11` | Connectors & Data Lead | Delivered live Redis connector runtime (`A-02`, `PR #30`, `#31`), advancing `CONNECTOR_FIXED_NOW` (`Q3`), Redis verification commands, and [`handovers/arda.md`](handovers/arda.md). | Handover merged (`#30`, `#31`) |
 
 ---
 
@@ -56,14 +56,14 @@ In compliance with the Project Assignment 3 deliverables specification, contribu
 
 | Task ID | Work Package Description | Assignee | Reviewer | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **TSK-DEP-01** | Draft Deployment Overview, topology, runtime inventory, and mock boundary (§1) | Ahmet Sefa Efendioğlu | Entire Team | **Completed (v1.0)** |
+| **TSK-DEP-01** | Draft Deployment Overview, topology, runtime inventory, and mock boundary (§1) | Ahmet Sefa Efendioğlu | Entire Team | **Completed (v1.1)** |
 | **TSK-DEP-02** | Author `apps/api-gateway/Dockerfile`, `.dockerignore`, and `compose.yaml` (`S-05`, `S-06`, `PR #22`, `#44`) | Ahmet Sefa Efendioğlu | Murat Can Işık, Yunus Emre Biçer | **Completed & Verified** (`compose config`, isolated `egress` network, live 4-service Compose smoke) |
-| **TSK-DEP-03** | Document verified local build/test/stub runbook & 4-service Compose procedure (§2) | Ahmet Sefa Efendioğlu | Entire Team | **Completed (v1.0)** |
-| **TSK-DEP-04** | Finalize Configuration Plan, env matrix, secret handling, and network boundaries (§3) | Ahmet Sefa Efendioğlu | Arda Çelik, Murat Can Işık | **Completed (v1.0)** |
+| **TSK-DEP-03** | Document verified local build/test/stub runbook & 4-service Compose procedure (§2) | Ahmet Sefa Efendioğlu | Entire Team | **Completed (v1.1)** |
+| **TSK-DEP-04** | Finalize Configuration Plan, env matrix, secret handling, and network boundaries (§3) | Ahmet Sefa Efendioğlu | Arda Çelik, Murat Can Işık | **Completed (v1.1)** |
 | **TSK-DEP-05** | Integrate `apps/web/Dockerfile` handover (`PR #18`) into `dev` and verify web container build | Yunus Emre Biçer / Ahmet Sefa Efendioğlu | Ahmet Sefa Efendioğlu | **Completed & Verified** (`#18` merged & verified in 3-service & 4-service Compose) |
 | **TSK-DEP-06** | Deliver `apps/mcp-server/Dockerfile`, connector registration, `/internal/agent/stream` (`M-02`..`M-08`, `M-13`) | Murat Can Işık | Ahmet Sefa Efendioğlu | **Completed & Verified** (`#26`, `#28`, `#29`, `#34`–`#40`, `#44`, `#45` merged) |
 | **TSK-DEP-07** | Deliver live Redis connector config, `CONNECTOR_FIXED_NOW`, and Redis handover (`A-02`, `A-12`, `Q3`) | Arda Çelik | Ahmet Sefa Efendioğlu | **Completed & Verified** (`#30`, `#31` merged; Redis `cache:*` & `PTTL` verified in Compose) |
-| **TSK-DEP-08** | Execute 4-service `docker compose up --build`, health checks, Redis observation, and E2E benchmark (`S-05`, `S-06`, `S-07`) | Ahmet Sefa Efendioğlu | Entire Team | **Completed & Verified** (`compose-4service-egress-smoke.txt`, `nfr-e2e-latency-cache-benchmark.txt`) |
+| **TSK-DEP-08** | Execute 4-service `docker compose up --build`, health checks, live `--mode=smoke`, and E2E benchmark (`S-05`, `S-06`, `S-07`) | Ahmet Sefa Efendioğlu | Entire Team | **Completed & Verified** (`compose-4service-egress-smoke.txt`, `gateway-live-smoke.txt`, `nfr-e2e-latency-cache-benchmark.txt`) |
 
 ---
 
@@ -138,13 +138,13 @@ Verified on clean `origin/dev` (`73c56a2` / `13f71d7`):
 
 ### 2.2 Verified 4-Service Docker Compose Stack (`web` + `api-gateway` + `mcp-server` + `redis`)
 
-Verified in full after `PR #44` (`compose.yaml` `egress` network fix) and `PR #45` (`13f71d7`):
+Verified in full after `PR #44` (`compose.yaml` `egress` network fix) and `PR #45` (`13f71d7`) with real `.env` `GEMINI_API_KEY`:
 
 1. **Create `.env` from template (never commit `.env`):**
    ```bash
    cp .env.example .env
    ```
-   Set a strong non-default `JWT_SECRET` for production mode and set Murat's real `GEMINI_API_KEY` (if running UC-04 live Gemini chat).
+   Set a strong non-default `JWT_SECRET` and set the team `GEMINI_API_KEY` (`GEMINI_MODEL=gemini-3.5-flash-lite`).
 2. **Validate Compose topology:**
    ```bash
    JWT_SECRET=compose-validation-placeholder docker compose -f compose.yaml config --quiet
@@ -155,11 +155,10 @@ Verified in full after `PR #44` (`compose.yaml` `egress` network fix) and `PR #4
    docker compose up --build -d
    ```
    **Observed startup order (`Arda §5` / `compose.yaml`):**
-   `redis` (`healthy`) → `mcp-server` (`healthy`, `/health` reports `cache: "redis"`, `agent.provider: "gemini"` when keyed) → `api-gateway` (`healthy`, `:3000/health`) → `web` (`healthy`, `:3002/healthz`).
-4. **Verify Compose security & egress (`compose-4service-egress-smoke.txt`, `2026-11-22T13:19:54Z`):**
-   - `mcp-server` outbound HTTPS via isolated `egress` network: `generativelanguage.googleapis.com:443 -> EGRESS_OK:172.217.112.4:TLSv1.3` (resolving pre-PR #44 `EAI_AGAIN`).
-   - `S-06` isolation intact: `redis` on `*_internal` only (`Ports: {"6379/tcp":null}`), `mcp-server` on `*_internal` + `*_egress` (`Ports: {"3001/tcp":null}`), `web` on `*_edge` only (`3002:3002`); host `:3001` connection refused; `web -> mcp-server:3001` `BLOCKED:TIMEOUT`; `web -> redis:6379` `BLOCKED:TIMEOUT`.
-   - End-to-end `:3002/api/v1/query` confirmed `LIVE` → `CACHE_HIT`, Redis keys (`cache:dining:2026-11-23`, `cache:library:ALL` `PTTL=178775ms`, `cache:shuttle:MAIN_RING`, `cache:schedule:<hash>:MONDAY`), `connector.execute` logs, and live Redis rate limiting (`30 x 200`, 31st `429 RATE_LIMITED`, `ZCARD=30`).
+   `redis` (`healthy`) → `mcp-server` (`healthy`, `/health` reports `runtime.cache: "redis"`, `agent.provider: "gemini"`) → `api-gateway` (`healthy`, `:3000/health`) → `web` (`healthy`, `:3002/healthz`).
+4. **Verify Compose security & egress (`compose-4service-egress-smoke.txt` & `AT-04` live run):**
+   - `mcp-server` outbound HTTPS via isolated `egress` network: `generativelanguage.googleapis.com:443 -> EGRESS_OK:172.217.112.4:TLSv1.3` and real Gemini streamed responses (`AT-04` `3` `tool`, `23` `token`, `1` `done`).
+   - `S-06` isolation intact: `redis` on `*_internal` only (`Ports: {"6379/tcp":null}`), `mcp-server` on `*_internal` + `*_egress` (`Ports: {"3001/tcp":null}`), `web` on `*_edge` only (`3002:3002`); host `:3001` `ECONNREFUSED`; `web -> mcp-server:3001` `BLOCKED:TIMEOUT`; `web -> redis:6379` `BLOCKED:TIMEOUT`.
 
 ### 2.3 Acceptance Runbook (`CONNECTOR_FIXED_NOW` & Fault Mode)
 
@@ -182,10 +181,11 @@ Verified in full after `PR #44` (`compose.yaml` `egress` network fix) and `PR #4
 
 ### 2.4 Smoke Verification, Benchmark & Shutdown / Rollback
 
-- **Live gateway smoke harness (`S-07`):**
+- **Live gateway smoke harness (`S-07`, `2026-11-22T16:02:32Z`):**
   ```bash
   GATEWAY_URL=http://localhost:3000 node apps/api-gateway/scripts/run-acceptance-harness.mjs --mode=smoke
   ```
+  **Observed result:** **`11 / 11` PASS** including live `UC-04_CHAT_SSE_STREAM` (`received 2186 bytes of SSE frames`, [`gateway-live-smoke.txt`](evidence/deployment/gateway-live-smoke.txt)).
 - **End-to-end Compose throughput & cache benchmark (`nfr-e2e-latency-cache-benchmark.txt`):**
   20 concurrent authenticated students × 25 requests (`500` requests, `0` errors, wall time `869.9 ms`, `574.8 req/s`): **`99.4%` cache hit ratio** (`497 CACHE_HIT`, `3 LIVE`) and **`44.41 ms` cached P95 latency** (`44.26 ms` overall P95).
 - **Graceful shutdown & clean reset:**
@@ -229,7 +229,7 @@ Aligned with `API Contract v1.1 §7`, `.env.example`, [`apps/mcp-server/README.m
 ### 3.2 Authentication, Secret Handling & Dev-Only Mock SSO Notice
 
 - **Dev-Only Mock SSO:** `POST /api/v1/auth/mock-login` generates HS256 JWTs for synthetic personas (`demo-student-01`, `demo-student-02`) for academic demonstration only.
-- **Secret Isolation:** `.env` and `.env.*` (except `.env.example`) are excluded via `.gitignore`, `apps/api-gateway/Dockerfile.dockerignore`, and `apps/mcp-server/Dockerfile.dockerignore`. All JWTs in evidence logs are redacted as `eyJ...<redacted>`.
+- **Secret Isolation:** `.env` and `.env.*` (except `.env.example`) are excluded via `.gitignore`, `apps/api-gateway/Dockerfile.dockerignore`, and `apps/mcp-server/Dockerfile.dockerignore`. All JWTs and API keys are omitted or redacted (`eyJ...<redacted>`) in repository logs and artifacts.
 
 ### 3.3 Network Security Boundary & Healthchecks
 
@@ -246,8 +246,8 @@ Aligned with `API Contract v1.1 §7`, `.env.example`, [`apps/mcp-server/README.m
 
 ### 3.5 Known Limitations & Open Items
 
-1. **QA Workstation `.env` Gemini Key (`AT-04`):** `compose.yaml` works cleanly with Gemini (`PR #45` confirmed `3 tool`, `24/22 token`, `done`, `0` PII/JWT leaks with Murat's key); because `.env` is gitignored (`Contract §8 Q2`), `AT-04` browser chat steps remain ready to run once the team key is supplied at demo/QA time.
-2. **Standard MCP Client `tools/call` Gap (`M-09`):** `mcp-server` uses content `type: "json"` (contract §4); standard MCP Inspector accepts `tools/list` and rejects `tools/call` (`Invalid tools/call result`). Gateway and UI are unaffected.
+1. **Standard MCP Client `tools/call` Gap (`M-09`):** `mcp-server` uses content `type: "json"` (contract §4); standard MCP Inspector accepts `tools/list` and rejects `tools/call` (`Invalid tools/call result`). Gateway and UI are unaffected; fix is planned post-demo.
+2. **Gemini Free-Tier Model Availability:** Model availability depends on the active `.env` `GEMINI_API_KEY`; re-verify `GEMINI_MODEL` (`gemini-3.5-flash-lite`) before live presentation (`compose.yaml` passes it without rebuild).
 3. **Deferred Scope:** PostgreSQL/Prisma user persistence (`FR-20`), Connector Health Card D (`FR-18`), and 5-student empirical SUS session (`NFR-06`) are deferred outside PA3 scope.
 
 ---
@@ -260,3 +260,4 @@ Aligned with `API Contract v1.1 §7`, `.env.example`, [`apps/mcp-server/README.m
 | **0.2** | 20 Nov 2026 | Overview, §1.2, §2.2–2.4, §3.5 | Installed Docker Desktop `29.9.3` + Compose `v5.7.0`; fixed `.dockerignore`; verified `compose.yaml config`, gateway build, and live `api-gateway` + `redis:7-alpine` smoke test. | Ahmet Sefa Efendioğlu |
 | **0.3** | 20 Nov 2026 | Overview, Contributors, Task Matrix, §1.2, §2.2, §3.5 | Verified 3-service Compose (`web` + `api-gateway` + `redis`) after `PR #18` & `#20` merge (`compose-3service-smoke.txt`); updated Vitest count to `230/230`. | Ahmet Sefa Efendioğlu |
 | **1.0** | 22 Nov 2026 | All (`dev` @ `13f71d7`) | Integrated Murat (`#26`, `#28`, `#29`, `#34`–`#40`, `#45`) and Arda (`#30`, `#31`) deliverables + `PR #44` (`egress` network & `GEMINI_MODEL`); recorded full 4-service Compose verification (`compose-4service-egress-smoke.txt`), `NFR-01`/`NFR-02` benchmark (`nfr-e2e-latency-cache-benchmark.txt`), acceptance runbook (`CONNECTOR_FIXED_NOW`), and closed all deployment code blockers. | Ahmet Sefa Efendioğlu |
+| **1.1** | 22 Nov 2026 | Summary, Task Matrix, §2.2, §2.4, §3.5 | Recorded full `AT-01`..`AT-04` **`4 / 4 PASS`** with real Gemini configured in gitignored `.env`, added live `run-acceptance-harness.mjs --mode=smoke` (`11/11 PASS`, `gateway-live-smoke.txt`), and closed the local `.env` key limitation in §3.5. | Ahmet Sefa Efendioğlu |
