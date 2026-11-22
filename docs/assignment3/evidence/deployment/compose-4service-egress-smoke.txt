@@ -1,0 +1,34 @@
+========================================================================
+Campus Data Orchestrator — 4-Service Compose & Egress Verification
+========================================================================
+SCOPE NOTICE: Verifies full 4-service `docker compose -f compose.yaml up --build -d`
+              (`redis`, `mcp-server`, `api-gateway`, `web`) with isolated `egress`
+              network for `mcp-server` and `GEMINI_MODEL` passthrough.
+              No local GEMINI_API_KEY is configured in `.env`, so chat checks
+              verify auth + `503 UPSTREAM_UNAVAILABLE` propagation while outbound
+              HTTPS connectivity to `generativelanguage.googleapis.com:443` is
+              probed directly inside `mcp-server`.
+              This is NOT a formal AT-01..AT-04 execution.
+------------------------------------------------------------------------
+Executed At (UTC): 2026-11-22T13:19:54.522Z
+Branch:            fix/pa3-compose-mcp-egress
+HEAD SHA:          73c56a26005c5bc0c6e9386ec81c670ebc2fa112
+origin/dev SHA:    73c56a26005c5bc0c6e9386ec81c670ebc2fa112
+Docker CLI:        Docker version 29.9.3, build 5457199
+Docker Compose:    Docker Compose version v5.7.0
+========================================================================
+
+1. Validating compose.yaml...
+[PASS] docker compose -f compose.yaml config --quiet
+2. Building and starting all 4 services (redis, mcp-server, api-gateway, web)...
+[PASS] All 4 healthchecks healthy: redis=healthy, mcp-server=healthy, api-gateway=healthy, web=healthy
+[PASS] Service health: web=/healthz 200, gateway=/health 200, mcp-server=/health ok=true (cache reports redis)
+[PASS] Outbound egress from mcp-server to generativelanguage.googleapis.com:443 -> EGRESS_OK:172.217.112.4:TLSv1.3
+[PASS] Network isolation (S-06): redisNets=[bil481-2026-project_internal], mcpNets=[bil481-2026-project_egress,bil481-2026-project_internal], webNets=[bil481-2026-project_edge]; host:3001=BLOCKED; web->mcp=BLOCKED:TIMEOUT; web->redis=BLOCKED:TIMEOUT
+[PASS] 4-service query chain via :3002: cafeteria 1st=LIVE/2nd=CACHE_HIT, shuttle=LIVE, library=LIVE
+[PASS] Auth & chat guards via :3002 (token=eyJhbGciOi...<redacted>): guest schedule=401, auth schedule=200 (LIVE), guest chat=401, chat without GEMINI_API_KEY=503 UPSTREAM_UNAVAILABLE
+[PASS] Redis cache inspection: keys=[cache:dining:2026-11-23, cache:library:ALL, cache:schedule:f7c22816e158058b:MONDAY, cache:shuttle:MAIN_RING], PTTL(cache:library:ALL)=178775ms; mcp-server logs include connector.execute
+[PASS] Live Redis rate limiting via :3002: 30 x 200, 31st -> 429 RATE_LIMITED (Retry-After=60s), ZCARD=30
+========================================================================
+RESULT: COMPOSE_4SERVICE_EGRESS_SMOKE_PASSED
+========================================================================

@@ -5,11 +5,14 @@
 #   - `internal` (internal: true): Private backend network (`api-gateway`, `mcp-server`, `redis`).
 #     `web` cannot reach `mcp-server` or `redis` directly, and neither `mcp-server` nor `redis`
 #     publishes any ports to the host.
+#   - `egress`: Plain bridge network attached ONLY to `mcp-server` for outbound HTTPS access
+#     to the Gemini API. `web` and `redis` are NOT on `egress`, so `S-06` isolation holds.
 #
-# Integration Status / Known Blockers:
-#   - `api-gateway`: Dockerfile ready (`apps/api-gateway/Dockerfile`, owner: Sefa).
-#   - `web`: Dockerfile & `/healthz` merged on `dev` (`PR #18`, `dc2da33`, owner: Yunus).
-#   - `mcp-server`: BLOCKED until Murat delivers `apps/mcp-server/Dockerfile` and `/internal/agent/stream` (`M-08`, `M-13`).
+# Service Status:
+#   - `api-gateway`: Ready (`apps/api-gateway/Dockerfile`, owner: Sefa).
+#   - `web`: Ready (`apps/web/Dockerfile` & `/healthz`, PR #18, owner: Yunus).
+#   - `mcp-server`: Ready (`apps/mcp-server/Dockerfile`, agent & Redis runtime, PR #28/#29/#31/#34, owners: Murat & Arda).
+#   - `redis`: `redis:7-alpine`, internal network only.
 
 networks:
   edge:
@@ -17,6 +20,8 @@ networks:
   internal:
     driver: bridge
     internal: true
+  egress:
+    driver: bridge
 
 services:
   redis:
@@ -32,7 +37,7 @@ services:
       retries: 5
       start_period: 5s
 
-  # BLOCKED (Murat M-13): Requires apps/mcp-server/Dockerfile and real connector/agent wiring (M-02..M-08).
+  # Ready on dev (Murat PR #26/#28/#29/#34/#40 + Arda PR #31; internal + isolated egress for Gemini API).
   mcp-server:
     build:
       context: .
@@ -40,6 +45,7 @@ services:
     restart: unless-stopped
     networks:
       - internal
+      - egress
     expose:
       - "3001"
     # Intentionally NO `ports:` mapping — direct public access to /mcp is a security bypass.
@@ -48,6 +54,7 @@ services:
       MCP_SERVER_PORT: "3001"
       REDIS_URL: redis://redis:6379
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
       CAFETERIA_CONNECTOR_MODE: ${CAFETERIA_CONNECTOR_MODE:-mock}
       SHUTTLE_CONNECTOR_MODE: ${SHUTTLE_CONNECTOR_MODE:-mock}
       LIBRARY_CONNECTOR_MODE: ${LIBRARY_CONNECTOR_MODE:-mock}

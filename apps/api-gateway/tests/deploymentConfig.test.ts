@@ -22,23 +22,41 @@ describe('Gateway & Compose Deployment Configuration Security (S-05, S-06)', () 
     const healthcheckCount = (compose.match(/healthcheck:/g) || []).length;
     expect(healthcheckCount).toBe(4);
 
-    // Extract per-service blocks to verify ports & network boundaries
-    const redisBlock = compose.slice(compose.indexOf('  redis:'), compose.indexOf('  # BLOCKED (Murat'));
+    // Extract networks & per-service blocks to verify ports & network boundaries
+    const networksBlock = compose.slice(compose.indexOf('networks:'), compose.indexOf('services:'));
+    const redisBlock = compose.slice(compose.indexOf('  redis:'), compose.indexOf('  mcp-server:'));
     const mcpBlock = compose.slice(compose.indexOf('  mcp-server:'), compose.indexOf('  api-gateway:'));
+    const gwBlock = compose.slice(compose.indexOf('  api-gateway:'), compose.indexOf('  web:'));
     const webBlock = compose.slice(compose.indexOf('  web:'));
 
+    expect(networksBlock).toContain('edge:');
+    expect(networksBlock).toContain('internal:');
+    expect(networksBlock).toContain('internal: true');
+    expect(networksBlock).toContain('egress:');
+
     expect(redisBlock).not.toMatch(/^\s+ports:/m);
+    expect(redisBlock).toContain('- internal');
+    expect(redisBlock).not.toContain('- edge');
+    expect(redisBlock).not.toContain('- egress');
+
     expect(mcpBlock).not.toMatch(/^\s+ports:/m);
     expect(mcpBlock).toContain('- internal');
+    expect(mcpBlock).toContain('- egress');
     expect(mcpBlock).not.toContain('- edge');
+    expect(mcpBlock).toContain('${GEMINI_API_KEY');
+    expect(mcpBlock).toContain('${GEMINI_MODEL');
+
+    expect(gwBlock).toContain('- edge');
+    expect(gwBlock).toContain('- internal');
+    expect(gwBlock).not.toContain('- egress');
 
     expect(webBlock).toContain('- edge');
     expect(webBlock).not.toContain('- internal');
+    expect(webBlock).not.toContain('- egress');
     expect(webBlock).toContain('3002:3002');
 
     // Secrets must come from env substitution, never hardcoded literals
     expect(compose).toContain('${JWT_SECRET');
-    expect(compose).toContain('${GEMINI_API_KEY');
     expect(compose).not.toContain('campus-orchestrator-test-secret-key-bil481');
   });
 
