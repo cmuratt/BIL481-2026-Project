@@ -5,7 +5,7 @@
 | **Author** | Murat Can Işık (241101013) — `@cmuratt` |
 | **Component** | `apps/mcp-server/**`, `packages/shared/**`, `docs/Design_Document.md` (M-11), `docs/assignment3/traceability.md` (M-12), `docs/assignment3/contracts/API_CONTRACT.md` (steward) |
 | **For** | Ahmet Sefa Efendioğlu (Deployment Plan, Test Results), Yunus Emre Biçer (chat UI, AT-04 steps), Arda Çelik (connector runtime used by the MCP server) |
-| **Version / Date** | 1.2, 22 November 2026 (1.0 and 1.1 were written on 21 and 22 November 2026) |
+| **Version / Date** | 1.3, 28 November 2026 (1.0 – 1.2 were written on 21 and 22 November 2026; 1.3 only replaces the live demo on 26 Nov with the demo video due 5 Dec in section 8) |
 | **State described** | `dev` at `1dd775a`. All pull requests of Murat (#26, #28, #29, #34 – #43, #45) and the compose pull request of Sefa (#44) are merged; no pull request is open |
 | **Team guide tasks** | M-01 .. M-13 |
 
@@ -163,4 +163,4 @@ data: {"answer":"…","toolsInvoked":["get_course_schedule"],"isComplete":true}
 | AT-01..AT-04 in the browser; AT document v1.0 | Sefa, Yunus | Acceptance result | Done (22 Nov 2026) |
 | Deployment Plan and Test Results Report | Sefa | Deliverables | Done (v1.2, v1.1) |
 | Connector rows verification in the traceability matrix | Arda | `handovers/arda.md` is on `dev`; rows still marked "owner verification pending" | Open |
-| Demo rehearsal with the AT v1.0 question and a ready second model name | Murat, Sefa, Yunus | Demo on 26 Nov | Open |
+| Demo video: record the four scenarios with the AT v1.0 test data (Tuesday 12:10 clock for AT-04) and a ready second model name; there is no oral session | Murat, Sefa, Yunus | Demo video, due 5 Dec 2026 (after the PA3 submission on 29 Nov) | Open |

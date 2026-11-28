@@ -26,6 +26,17 @@
 
 ## Deliverables Index
 
+### Assignment 3 (Deployment, Acceptance Tests & Test Results) — due 29 Nov 2026, 23:59
+- **[Deployment Plan](docs/assignment3/Deployment_Plan.md):** Deployment overview, step-by-step four-service Docker Compose process, and final configuration plan (lead: Ahmet Sefa Efendioğlu).
+- **[Acceptance Tests and Acceptance Criteria](docs/assignment3/Acceptance_Tests_and_Criteria.md):** Measurable acceptance criteria and the four acceptance tests `AT-01`–`AT-04` for `UC-01`–`UC-04`, with the test ↔ criteria mapping (v1.0, frozen; lead: Yunus Emre Biçer).
+- **[Test Results Report](docs/assignment3/Test_Results_Report.md):** Pass/fail results of `AT-01`–`AT-04` (**4 / 4 PASS**), analysis of the AT-04 Run 1 failure and its fix, and logs/outputs (lead: Ahmet Sefa Efendioğlu).
+- **Logs and outputs:** [`docs/assignment3/evidence/`](docs/assignment3/evidence/) — screenshots, redacted network and agent tool logs per test (`AT-01`..`AT-04`), Compose/egress smoke runs, NFR-01/NFR-02 benchmark, connector and security test outputs.
+- **Traceability (requirements → design → code → tests):** [`docs/assignment3/traceability.md`](docs/assignment3/traceability.md); API contract between the components: [`docs/assignment3/contracts/API_CONTRACT.md`](docs/assignment3/contracts/API_CONTRACT.md); per-member handovers: [`docs/assignment3/handovers/`](docs/assignment3/handovers/).
+
+### Upcoming
+- **Demo:** recorded video of the four scenarios (no oral session) — due 5 Dec 2026.
+- **Assignment 4 (bonus):** due 5 Dec 2026.
+
 ### Assignment 2 (Design & Quality Assurance)
 - **[Design Document](docs/Design_Document.md):** System overview, architecture, codebase structure, key implementations, component interfaces, wireframes (`docs/wireframes/`), 4 use cases (`UC-01`–`UC-04`), technology comparisons (`comparisons/`), and task matrix.
 - **[Quality Assurance (QA) Plan](docs/QA_Plan.md):** Testing strategy, 4 measurable quality factors, detailed test cases (`TC-01`–`TC-08`), bug tracking workflow, and release gate checklist.
@@ -37,26 +48,39 @@
 
 ---
 
-## Implementation Status (Phase 2 Implemented vs. Phase 3 Planned)
+## Implementation Status (Assignment 3)
 
-| Component / Workspace | Phase 2 Status | Notes |
+| Component / Workspace | Status | Notes |
 | :--- | :--- | :--- |
 | **`packages/shared`** | **Implemented** | Shared domain models, tool input/output contracts, TTL constants, `ICampusConnector` interface |
-| **`apps/mcp-server`** | **Implemented (Core)** | MCP SDK server (`stdio`, legacy HTTP+SSE, `POST /mcp`), Zod validation, `ToolDispatcher`, auth guard, `IAgentOrchestrator` skeleton |
-| **`packages/connectors`** | **Implemented (Mock & In-Memory)** | Deterministic seeded mock connectors for all 4 services, `InMemoryCacheStore`, 3-state `CircuitBreaker`, `ResilientConnectorExecutor` |
-| **`apps/api-gateway`** | **Implemented (Skeleton)** | Fastify gateway, mock-SSO JWT verification, token termination & header injection, `InMemoryRateLimiterStore` |
-| **`apps/web`** | **Implemented (Intent Router)** | Bilingual TR/EN deterministic `routeStudentQuery` router; Next.js 14 dashboard & chat views designed via SVG wireframes (`docs/wireframes/`) |
-| **Gemini LLM & PII Scrubber** | **Planned (Phase 3)** | Live Google Gemini function calling and regex PII scrubber (`FR-13`, `FR-14`) |
-| **Redis, PostgreSQL & Docker** | **Planned (Phase 3)** | Live Redis 7.2 cache/rate-limit stores, PostgreSQL/Prisma telemetry (`FR-20`), full `docker compose up` orchestration (`NFR-09`), live Streamable HTTP transport |
+| **`apps/mcp-server`** | **Implemented** | MCP server (`POST /mcp`, JSON-RPC 2.0), Zod validation, `ToolDispatcher` with auth guard, connector-backed tools, UC-04 `AgentOrchestrator` with Google Gemini function calling, PII scrubber and `POST /internal/agent/stream` (SSE) |
+| **`packages/connectors`** | **Implemented (mock data)** | Seeded mock connectors for the four services, `RedisCacheStore` / `InMemoryCacheStore` with per-service TTLs, 3-state `CircuitBreaker`, stale-if-error `ResilientConnectorExecutor`, `CONNECTOR_FIXED_NOW` test clock |
+| **`apps/api-gateway`** | **Implemented** | Fastify gateway, mock-SSO JWT verification, token termination and identity header injection, Redis sliding-window rate limiter, `/api/v1/query` and `/api/v1/chat/stream` proxies |
+| **`apps/web`** | **Implemented** | Next.js dashboard cards (menu, shuttle, library), `/giris` login, streaming chat (`/asistan`), bilingual TR/EN `routeStudentQuery` intent router, responsive layout |
+| **Docker Compose** | **Implemented** | Four services (`redis`, `mcp-server`, `api-gateway`, `web`) with health checks and isolated `edge` / `internal` / `egress` networks ([`compose.yaml`](compose.yaml)) |
+| **Not in PA3** | Gap | PostgreSQL telemetry (`FR-20`); NFR-04 and NFR-06 not evaluated (see the Test Results Report) |
+
+The four scenarios `UC-01`–`UC-04` were accepted with `AT-01`–`AT-04` (**4 / 4 PASS**, 22 Nov 2026) on the four-service Compose stack in Chrome; `UC-04` ran with the real Gemini provider.
 
 ---
 
 ## Build & Test Instructions
 
-All Phase 2 TypeScript workspaces and offline unit/integration test suites run without external network access:
+All TypeScript workspaces and the offline unit/integration test suites run without external network access (34 test files, 373 passed, 8 real-Redis tests skipped offline):
 
 ```bash
 npm install
 npm run build
 npm test
+```
+
+## Running the Demo Stack (Docker Compose)
+
+Full steps, the acceptance runbook and all variables are in the [Deployment Plan](docs/assignment3/Deployment_Plan.md).
+
+```bash
+cp .env.example .env        # set a strong JWT_SECRET and GEMINI_API_KEY; never commit .env
+docker compose up --build -d
+# web: http://localhost:3002   gateway: http://localhost:3000/health
+docker compose down
 ```
