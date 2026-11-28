@@ -5,7 +5,7 @@
 | **Author** | Yunus Emre Biçer (241101009) — `@YunusEmre113` |
 | **Component** | `apps/web` — Next.js web client, intent router, dashboard, login, chat stream client |
 | **For** | Murat Can Işık: Design Document update (M-11) and traceability matrix (M-12). Also useful for Sefa (Deployment Plan, Test Results) |
-| **Version / Date** | 1.1, 21 November 2026 (1.0: 20 November 2026) |
+| **Version / Date** | 1.2, 28 November 2026 (1.1: 21 November 2026; 1.0: 20 November 2026) |
 | **State described** | `dev` at `eb41fb0` (web PRs #15, #16, #18, #19, #20, #32 merged; gateway S-01/S-03, MCP M-02 and Redis cache A-02 merged). v1.1 marks the chat screen as implemented and removes the "open PR" notes |
 | **Team guide task** | Y-13 |
 
@@ -38,7 +38,7 @@
 | Chat stream client (FR-17, FR-19 part) | Implemented and used by the chat screen | `apps/web/src/lib/chat/` |
 | Mock-SSO login / sign-out (FR-15) | Implemented (PR #20) | `apps/web/src/lib/auth/`, `apps/web/src/components/SessionProvider.tsx` |
 | Chat screen with streaming and tool badges (Y-07, Y-08) | Implemented (PR #32): streamed answer, one badge per tool, "still processing" notice, stop, explicit retry, last 20 turns kept; login required | `apps/web/src/components/chat/`, `apps/web/src/lib/chat/conversation.ts` |
-| Docker image, `/healthz` (NFR-09, web part) | Implemented (PR #18); built and run by Sefa in the 3-service Compose stack (Deployment Plan v0.3) | `apps/web/Dockerfile` |
+| Docker image, `/healthz` (NFR-09, web part) | Implemented (PR #18); built and run by Sefa in the Compose stack, four services since PR #44 (Deployment Plan v1.3) | `apps/web/Dockerfile` |
 | Tests | 120 web tests on `dev` at `eb41fb0` (253 in the repository) | `apps/web/tests/` |
 
 End-to-end status: the cards and login were exercised in the browser against the real gateway and MCP server (S-01, M-02). The chat screen reaches the real gateway, which answers 502 `DOWNSTREAM_ERROR` ("Asistana şu an ulaşılamıyor") until the agent stream endpoint (M-08) exists; the full chat flow has so far been exercised with fixtures only.
@@ -218,10 +218,10 @@ flowchart TB
 | :--- | :--- | :--- | :--- |
 | Real `/api/v1/query` proxy to MCP (S-01) | Sefa | Cards end to end (AT-01..03) | Done (on `dev`) |
 | Gateway error bodies in contract §3.4 format | Sefa | Consistent error handling (web already accepts both formats) | Not blocking |
-| Gateway port: `.env.example` says `GATEWAY_PORT=3000`, code reads `PORT` (default 4000) | Sefa | Compose / web rewrite target (contract §7) | Open |
+| Gateway port: `.env.example` says `GATEWAY_PORT=3000`, code read `PORT` (default 4000) | Sefa | Compose / web rewrite target (contract §7) | Done: the gateway reads `GATEWAY_PORT`, then `PORT`, default 3000 (`apps/api-gateway/src/index.ts`) |
 | MCP uses connector handlers instead of sample handlers (M-02) | Murat | Real connector data and cache metadata in the cards | Done (on `dev`) |
-| Agent stream in contract §3.3 format (M-04, M-08) and `/api/v1/chat/stream` proxy (S-03) | Murat, Sefa | AT-04; the expected frames are documented in PR #19 | Proxy S-03 done; agent stream open (PR #29, M-08) |
-| `CONNECTOR_FIXED_NOW` for reproducible acceptance runs | Arda | AT-02 step 8, time-dependent checks | Implemented in PR #31 (open) |
+| Agent stream in contract §3.3 format (M-04, M-08) and `/api/v1/chat/stream` proxy (S-03) | Murat, Sefa | AT-04; the expected frames are documented in PR #19 | Done: proxy S-03, agent (PR #29) and agent stream (M-08, PR #34) merged; AT-04 passed (Test Results Report v1.1) |
+| `CONNECTOR_FIXED_NOW` for reproducible acceptance runs | Arda | AT-02 step 8, time-dependent checks | Done (PR #31, merged) |
 | Chat UI (Y-07), chat states (Y-08) | Yunus | AT-04 | Done (PR #32) |
 | Responsive and browser checks (Y-10) | Yunus (Chromium, Firefox), Arda (Safari) | NFR-07 | Done: Chromium (PR #33), Firefox and Safari visual checks |
-| First real `docker build` of the web image | Sefa | NFR-09, Deployment Plan | Done (3-service Compose, Deployment Plan v0.3) |
+| First real `docker build` of the web image | Sefa | NFR-09, Deployment Plan | Done (four-service Compose, Deployment Plan v1.3) |
