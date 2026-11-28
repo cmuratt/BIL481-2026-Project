@@ -161,6 +161,6 @@ data: {"answer":"…","toolsInvoked":["get_course_schedule"],"isComplete":true}
 | :--- | :--- | :--- | :--- |
 | Compose network for the Gemini API and `GEMINI_MODEL` | Sefa | Chat with Gemini in Compose; model switch | Done (PR #44) |
 | AT-01..AT-04 in the browser; AT document v1.0 | Sefa, Yunus | Acceptance result | Done (22 Nov 2026) |
-| Deployment Plan and Test Results Report | Sefa | Deliverables | Done (v1.2, v1.1) |
+| Deployment Plan and Test Results Report | Sefa | Deliverables | Done (v1.3, v1.1) |
 | Connector rows verification in the traceability matrix | Arda | `handovers/arda.md` is on `dev`; rows still marked "owner verification pending" | Open |
 | Demo video: record the four scenarios with the AT v1.0 test data (Tuesday 12:10 clock for AT-04) and a ready second model name; there is no oral session | Murat, Sefa, Yunus | Demo video, due 5 Dec 2026 (after the PA3 submission on 29 Nov) | Open |
