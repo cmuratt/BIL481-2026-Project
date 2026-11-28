@@ -41,7 +41,7 @@
 | Docker image, `/healthz` (NFR-09, web part) | Implemented (PR #18); built and run by Sefa in the Compose stack, four services since PR #44 (Deployment Plan v1.3) | `apps/web/Dockerfile` |
 | Tests | 120 web tests on `dev` at `eb41fb0` (253 in the repository) | `apps/web/tests/` |
 
-End-to-end status: the cards and login were exercised in the browser against the real gateway and MCP server (S-01, M-02). The chat screen reaches the real gateway, which answers 502 `DOWNSTREAM_ERROR` ("Asistana şu an ulaşılamıyor") until the agent stream endpoint (M-08) exists; the full chat flow has so far been exercised with fixtures only.
+End-to-end status: the cards and login were exercised in the browser against the real gateway and MCP server (S-01, M-02). The full chat flow also runs end to end: with the agent stream endpoint (M-08, PR #34) merged, AT-04 passed in the four-service Compose stack with the real Gemini provider (run 2, 22 Nov 2026; Test Results Report v1.1). Without a `GEMINI_API_KEY` the gateway answers 503 `UPSTREAM_UNAVAILABLE` and the chat shows an error with "Tekrar dene".
 
 ---
 
